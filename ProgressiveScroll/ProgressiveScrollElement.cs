@@ -149,15 +149,17 @@ using Microsoft.VisualStudio.Text.Formatting;
 					new Rect(-_scrollBarWidth, 0, _width, ActualHeight));
 
 				RenderText();
-				drawingContext.DrawImage(_bitmap, new Rect(-_scrollBarWidth, 0, _width, Math.Min(_height, ActualHeight)));
 
+				this.VisualBitmapScalingMode = System.Windows.Media.BitmapScalingMode.Fant;
+				Rect rect = new Rect(-_scrollBarWidth, 0, _width, Math.Min(_height, ActualHeight));
+				drawingContext.DrawImage(_bitmap, rect);
 
-				SnapshotPoint start = new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine .Snapshot, _textView.TextViewLines.FirstVisibleLine.Start);
+				/*SnapshotPoint start = new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine .Snapshot, _textView.TextViewLines.FirstVisibleLine.Start);
 
 				double viewportTop =  Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(start));
 				double viewportBottom = Math.Ceiling(Math.Max(GetYCoordinateOfLineBottom(_textView.TextViewLines.LastVisibleLine), viewportTop + _minViewportHeight));
 
-				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(-_scrollBarWidth, viewportTop, _width, viewportBottom));
+				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(-_scrollBarWidth, viewportTop, _width, viewportBottom));*/
 			}
 		}
 
@@ -171,7 +173,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 		private void RenderText()
 		{
 			// Find the hidden regions
-			IEnumerable<ICollapsed> collapsedRegions = _outliningManager.GetCollapsedRegions(_textView.TextViewLines.FormattedSpan);
+			IEnumerable<ICollapsed> collapsedRegions = _outliningManager.GetCollapsedRegions(new SnapshotSpan(_textView.TextBuffer.CurrentSnapshot, new Span(0, _textView.TextBuffer.CurrentSnapshot.Length)));
 			IEnumerator<ICollapsed> currentCollapsedRegion = collapsedRegions.GetEnumerator();
 			SnapshotSpan? currentCollapsedSnapshotSpan = null;
 			if (currentCollapsedRegion.MoveNext())
@@ -179,7 +181,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 				currentCollapsedSnapshotSpan = currentCollapsedRegion.Current.Extent.GetSpan(_textView.TextBuffer.CurrentSnapshot);
 			}
 
-			_height = _textView.TextViewLines.Count;
+			_height = _textView.VisualSnapshot.LineCount;
 			_pixels = new byte[_stride * _height];
 
 			string text = _textView.TextBuffer.CurrentSnapshot.GetText();
@@ -264,8 +266,6 @@ using Microsoft.VisualStudio.Text.Formatting;
 				int numChars = 1;
 				if (!System.Char.IsWhiteSpace(text[i]))
 				{
-					int textFlags = 0;
-
 					switch (commentType)
 					{
 						case CommentType.None:
