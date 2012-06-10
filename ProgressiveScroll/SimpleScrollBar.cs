@@ -126,31 +126,21 @@ namespace ProgressiveScroll
 
 		private void ResetScrollMap()
 		{
-			if (_useElidedCoordinates && this.UseRealScrollBarTrackSpan)
+			_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, !_useElidedCoordinates);
+			/*if (_useElidedCoordinates && this.UseRealScrollBarTrackSpan)
 			{
 				_scrollMap.ScrollMap = _realScrollBar.Map;
 			}
 			else
 			{
 				_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, !_useElidedCoordinates);
-			}
+			}*/
 		}
 
 		private void ResetTrackSpan()
 		{
-			if (this.UseRealScrollBarTrackSpan)
-			{
-				_trackSpanTop = _realScrollBar.TrackSpanTop;
-				_trackSpanBottom = _realScrollBar.TrackSpanBottom;
-			}
-			else
-			{
-				_trackSpanTop = 0.0;
-				_trackSpanBottom = _textView.ViewportHeight;
-			}
-
-			//Ensure that the length of the track span is never 0.
-			_trackSpanBottom = Math.Max(_trackSpanTop + 1.0, _trackSpanBottom);
+			_trackSpanTop = 0;
+			_trackSpanBottom = _textView.VisualSnapshot.LineCount;
 		}
 
 		private bool UseRealScrollBarTrackSpan
@@ -173,13 +163,12 @@ namespace ProgressiveScroll
 				handler(this, new EventArgs());
 		}
 
-		public SimpleScrollBar(IWpfTextViewHost host, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory, bool useElidedCoordinates)
+		public SimpleScrollBar(IWpfTextView textView, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory, bool useElidedCoordinates)
 		{
-			_textView = host.TextView;
+			_textView = textView;
+			_textView.LayoutChanged += OnLayoutChanged;
 
 			_realScrollBarMargin = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
-
-			System.Diagnostics.Debug.Print("container width: " + _realScrollBarMargin.MarginSize);
 
 			if (_realScrollBarMargin != null)
 			{
@@ -229,6 +218,15 @@ namespace ProgressiveScroll
 			}
 		}
 
+		void OnLayoutChanged(object sender, EventArgs e)
+		{
+			if (this.UseRealScrollBarTrackSpan)
+			{
+				this.ResetTrackSpan();
+				this.RaiseTrackChangedEvent();
+			}
+		}
+
 		#region IVerticalScrollBar Members
 		public IScrollMap Map
 		{
@@ -237,8 +235,7 @@ namespace ProgressiveScroll
 
 		public double GetYCoordinateOfBufferPosition(SnapshotPoint bufferPosition)
 		{
-			double scrollMapPosition = _scrollMap.GetCoordinateAtBufferPosition(bufferPosition);
-			return this.GetYCoordinateOfScrollMapPosition(scrollMapPosition);
+			return _scrollMap.GetCoordinateAtBufferPosition(bufferPosition);
 		}
 
 		public double GetYCoordinateOfScrollMapPosition(double scrollMapPosition)
@@ -252,13 +249,7 @@ namespace ProgressiveScroll
 
 		public SnapshotPoint GetBufferPositionOfYCoordinate(double y)
 		{
-			double minimum = _scrollMap.Start;
-			double maximum = _scrollMap.End;
-			double height = maximum - minimum;
-
-			double scrollCoordinate = minimum + (y - this.TrackSpanTop) * (height + _scrollMap.ThumbSize) / this.TrackSpanHeight;
-
-			return _scrollMap.GetBufferPositionAtCoordinate(scrollCoordinate);
+			return _scrollMap.GetBufferPositionAtCoordinate(y);
 		}
 
 		public double TrackSpanTop
@@ -280,11 +271,12 @@ namespace ProgressiveScroll
 		{
 			get
 			{
-				double minimum = _scrollMap.Start;
+				return _textView.ViewportHeight / _textView.LineHeight;
+				/*double minimum = _scrollMap.Start;
 				double maximum = _scrollMap.End;
 				double height = maximum - minimum;
 
-				return _scrollMap.ThumbSize / (height + _scrollMap.ThumbSize) * this.TrackSpanHeight;
+				return _scrollMap.ThumbSize / (height + _scrollMap.ThumbSize) * this.TrackSpanHeight;*/
 			}
 		}
 

@@ -11,20 +11,22 @@ namespace ProgressiveScroll
 	using Microsoft.VisualStudio.Text;
 	using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Formatting;
+	using Microsoft.VisualStudio.Text.Document;
 
-	class ProgressiveScrollElement : FrameworkElement
+	class ProgressiveScrollElement
 	{
 		private readonly IWpfTextView _textView;
 		private readonly IOutliningManager _outliningManager;
 		private readonly IVerticalScrollBar _scrollBar;
+		private readonly ProgressiveScroll _progressiveScroll;
+		private readonly ITagAggregator<ChangeTag> _changeTagAggregator;
+
 
 		private Dictionary<string, int> _keywords;
 
-		private readonly int _scrollBarWidth = 17;
 		private readonly int _minViewportHeight = 5;
 		private int _width;
 		private int _height;
-
 
 		private byte[] _pixels;
 		private readonly PixelFormat pf = PixelFormats.Rgb24;
@@ -36,9 +38,13 @@ using Microsoft.VisualStudio.Text.Formatting;
 		private Color _commentColor;
 		private Color _stringColor;
 		private Color _visibleColor;
+		private Color _changedColor;
+		private Color _unsavedChangedColor;
 
-		private Brush _backgroundBrush;
+		private Brush _whitespaceBrush;
 		private Brush _visibleBrush;
+		private Brush _changedBrush;
+		private Brush _unsavedChangedBrush;
 
 		/// <summary>
 		/// Constructor for the ProgressiveScrollElement.
@@ -46,74 +52,37 @@ using Microsoft.VisualStudio.Text.Formatting;
 		/// <param name="textView">ITextView to which this ProgressiveScrollElement will be attacheded.</param>
 		/// <param name="verticalScrollbar">Vertical scrollbar of the ITextViewHost that contains <paramref name="textView"/>.</param>
 		/// <param name="tagFactory">MEF tag factory.</param>
-		public ProgressiveScrollElement(IWpfTextView textView, IOutliningManager outliningManager, IVerticalScrollBar verticalScrollbar, ProgressiveScrollFactory factory)
+		public ProgressiveScrollElement(IWpfTextView textView, IOutliningManager outliningManager, ITagAggregator<ChangeTag> changeTagAggregator, IVerticalScrollBar verticalScrollbar, ProgressiveScroll progressiveScroll)
 		{
 			_textView = textView;
 			_outliningManager = outliningManager;
 			_scrollBar = verticalScrollbar;
-
-			SnapsToDevicePixels = true;
+			_progressiveScroll = progressiveScroll;
+			_changeTagAggregator = changeTagAggregator;
 
 			_whitespaceColor = Color.FromRgb(0, 0, 0);
 			_normalColor = Color.FromRgb(255, 255, 255);
 			_commentColor = Color.FromRgb(255, 128, 255);
 			_stringColor = Color.FromRgb(163, 21, 21);
 			_visibleColor = Color.FromArgb(64, 255, 255, 255);
+			_changedColor = Color.FromRgb(108, 226, 108);
+			_unsavedChangedColor = Color.FromRgb(255, 238, 98);
 
-			_backgroundBrush = new SolidColorBrush(_whitespaceColor);
+			_whitespaceBrush = new SolidColorBrush(_whitespaceColor);
 			_visibleBrush = new SolidColorBrush(_visibleColor);
+			_changedBrush = new SolidColorBrush(_changedColor);
+			_unsavedChangedBrush = new SolidColorBrush(_unsavedChangedColor);
 
 			_width = 128;
 			_stride = (_width * pf.BitsPerPixel + 7) / 8;
 			_height = 0;
 			_pixels = null;
 
-			Width = _width - _scrollBarWidth;
-
 			AddKeywords();
-
-			outliningManager.RegionsChanged += OnRegionsChanged;
-			outliningManager.RegionsCollapsed += OnRegionsCollapsed;
-			outliningManager.RegionsExpanded += OnRegionsExpanded;
-
-			this.IsVisibleChanged += OnIsVisibleChanged;
 		}
 
 		public void Dispose()
 		{
-		}
-
-		private void OnRegionsChanged(object sender, RegionsChangedEventArgs args)
-		{
-			this.InvalidateVisual();
-		}
-
-		private void OnRegionsCollapsed(object sender, RegionsCollapsedEventArgs args)
-		{
-			this.InvalidateVisual();
-		}
-
-		private void OnRegionsExpanded(object sender, RegionsExpandedEventArgs args)
-		{
-			this.InvalidateVisual();
-		}
-
-		private void OnIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
-		{
-			if ((bool)e.NewValue)
-			{
-				_scrollBar.TrackSpanChanged += OnTrackSpanChanged;
-				this.InvalidateVisual();
-			}
-			else
-			{
-				_scrollBar.TrackSpanChanged -= OnTrackSpanChanged;
-			}
-		}
-
-		private void OnTrackSpanChanged(object sender, EventArgs e)
-		{
-			this.InvalidateVisual();
 		}
 
 		private double GetYCoordinateOfLineBottom(ITextViewLine line)
@@ -132,27 +101,23 @@ using Microsoft.VisualStudio.Text.Formatting;
 			}
 		}
 
-		/// <summary>
-		/// Override for the FrameworkElement's OnRender. When called, redraw
-		/// all of the markers
-		/// </summary>
-		protected override void OnRender(DrawingContext drawingContext)
+		public void Render(DrawingContext drawingContext)
 		{
-			base.OnRender(drawingContext);
-
 			if (!this._textView.IsClosed)
 			{
-				Brush backgroundBrush = new SolidColorBrush(_whitespaceColor);
-				drawingContext.DrawRectangle(
-					backgroundBrush,
-					null,
-					new Rect(-_scrollBarWidth, 0, _width, ActualHeight));
-
 				RenderText();
 
-				this.VisualBitmapScalingMode = System.Windows.Media.BitmapScalingMode.Fant;
-				Rect rect = new Rect(-_scrollBarWidth, 0, _width, Math.Min(_height, ActualHeight));
+				Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, Math.Min(_height, _progressiveScroll.DrawHeight));
 				drawingContext.DrawImage(_bitmap, rect);
+
+				int numEditorLines = (int)(_textView.ViewportHeight / _textView.LineHeight);
+				int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
+
+				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(0.0, firstLine, _progressiveScroll.ActualWidth, numEditorLines));
+
+				RenderChanges(drawingContext);
+
+
 
 				/*SnapshotPoint start = new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine .Snapshot, _textView.TextViewLines.FirstVisibleLine.Start);
 
@@ -488,5 +453,69 @@ using Microsoft.VisualStudio.Text.Formatting;
 			return _keywords.ContainsKey(keyword);
 		}
 
+		private void RenderChanges(DrawingContext drawingContext)
+		{
+			NormalizedSnapshotSpanCollection[] allChanges = GetUnifiedChanges(
+				_textView.TextSnapshot,
+				_changeTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
+
+			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], _changedBrush);
+			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], _unsavedChangedBrush);
+			//DrawChange(drawingContext, ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved, allChanges);
+		}
+
+		internal static NormalizedSnapshotSpanCollection[] GetUnifiedChanges(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<ChangeTag>> tags)
+		{
+			List<SnapshotSpan>[] unnormalizedChanges = new List<SnapshotSpan>[4]
+			{
+				null,
+				new List<SnapshotSpan>(),
+				new List<SnapshotSpan>(),
+				new List<SnapshotSpan>()
+			};
+
+			foreach (IMappingTagSpan<ChangeTag> change in tags)
+			{
+				unnormalizedChanges[(int)change.Tag.ChangeTypes].AddRange(change.Span.GetSpans(snapshot));
+			}
+
+			NormalizedSnapshotSpanCollection[] changes = new NormalizedSnapshotSpanCollection[4];
+			for (int i = 1; (i <= 3); ++i)
+			{
+				changes[i] = new NormalizedSnapshotSpanCollection(unnormalizedChanges[i]);
+			}
+
+			return changes;
+		}
+
+		private void DrawChanges(DrawingContext drawingContext, NormalizedSnapshotSpanCollection changes, Brush brush)
+		{
+			if (changes.Count > 0)
+			{
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].Start)) - 2;
+				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].End)) + 2;
+
+				for (int i = 1; i < changes.Count; ++i)
+				{
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(changes[i].Start) - 2;
+					if (yBottom < y)
+					{
+						drawingContext.DrawRectangle(
+							brush,
+							null,
+							new Rect(0, yTop, 3, yBottom - yTop));
+
+						yTop = y;
+					}
+
+					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[i].End)) + 2;
+				}
+
+				drawingContext.DrawRectangle(
+					brush,
+					null,
+					new Rect(0, yTop, 3, yBottom - yTop));
+			}
+		}
 	}
 }
