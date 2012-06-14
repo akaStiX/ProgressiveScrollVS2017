@@ -37,7 +37,12 @@ namespace ProgressiveScroll
 		/// Creates a <see cref="ProgressiveScroll"/> for a given <see cref="IWpfTextView"/>.
 		/// </summary>
 		/// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
-		public ProgressiveScroll(IWpfTextViewHost textViewHost, IOutliningManager outliningManager, ITagAggregator<ChangeTag> changeTagAggregator, IVerticalScrollBar scrollBar, ProgressiveScrollFactory factory)
+		public ProgressiveScroll(
+			IWpfTextViewHost textViewHost,
+			IOutliningManager outliningManager,
+			ITagAggregator<ChangeTag> changeTagAggregator,
+			IVerticalScrollBar scrollBar,
+			ProgressiveScrollFactory factory)
 		{
 			if (textViewHost == null)
 			{
@@ -120,6 +125,7 @@ namespace ProgressiveScroll
 		{
 			_textView.LayoutChanged += OnLayoutChanged;
 			_scrollBar.TrackSpanChanged += OnTrackSpanChanged;
+			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTagsChanged;
 
 			this.MouseLeftButtonDown += OnMouseLeftButtonDown;
 			this.MouseMove += OnMouseMove;
@@ -130,6 +136,7 @@ namespace ProgressiveScroll
 		{
 			_textView.LayoutChanged -= OnLayoutChanged;
 			_scrollBar.TrackSpanChanged -= OnTrackSpanChanged;
+			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTagsChanged;
 
 			this.MouseLeftButtonDown -= OnMouseLeftButtonDown;
 			this.MouseMove -= OnMouseMove;
@@ -142,6 +149,11 @@ namespace ProgressiveScroll
 		}
 
 		private void OnTrackSpanChanged(object sender, EventArgs e)
+		{
+			this.InvalidateVisual();
+		}
+
+		private void OnTagsChanged(object sender, SnapshotSpanEventArgs e)
 		{
 			this.InvalidateVisual();
 		}

@@ -18,7 +18,7 @@
 	[Order(After = PredefinedMarginNames.VerticalScrollBar)]
 	[MarginContainer(PredefinedMarginNames.VerticalScrollBarContainer)]
 	[ContentType("code")]
-	[TextViewRole(PredefinedTextViewRoles.Document)]
+	[TextViewRole(PredefinedTextViewRoles.Editable)]
 	internal sealed class ProgressiveScrollFactory : IWpfTextViewMarginProvider
 	{
 		[Import]

@@ -24,8 +24,11 @@ namespace ProgressiveScroll
 		private IVerticalScrollBar _realScrollBar;
 		private bool _useElidedCoordinates = false;
 
+		private double _extraHeight = 34.0;
+
 		double _trackSpanTop;
 		double _trackSpanBottom;
+		double _scale = 1.0;
 
 		private class ScrollMapWrapper : IScrollMap
 		{
@@ -127,20 +130,15 @@ namespace ProgressiveScroll
 		private void ResetScrollMap()
 		{
 			_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, !_useElidedCoordinates);
-			/*if (_useElidedCoordinates && this.UseRealScrollBarTrackSpan)
-			{
-				_scrollMap.ScrollMap = _realScrollBar.Map;
-			}
-			else
-			{
-				_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, !_useElidedCoordinates);
-			}*/
 		}
 
 		private void ResetTrackSpan()
 		{
+			_scale = (_realScrollBarMargin.VisualElement.ActualHeight + _extraHeight) / _textView.VisualSnapshot.LineCount;
+			_scale = Math.Min(_scale, 1.0);
+
 			_trackSpanTop = 0;
-			_trackSpanBottom = _textView.VisualSnapshot.LineCount;
+			_trackSpanBottom = _scale * _textView.VisualSnapshot.LineCount;
 		}
 
 		private bool UseRealScrollBarTrackSpan
@@ -186,8 +184,6 @@ namespace ProgressiveScroll
 			this.ResetScrollMap();
 
 			_scrollMap.MappingChanged += delegate { this.RaiseTrackChangedEvent(); };
-
-			//container.SizeChanged += OnContainerSizeChanged;
 		}
 
 		void OnScrollBarIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -198,15 +194,6 @@ namespace ProgressiveScroll
 				this.ResetScrollMap();  //This will indirectly cause RaiseTrackChangedEvent to be called.
 			else
 				this.RaiseTrackChangedEvent();
-		}
-
-		void OnContainerSizeChanged(object sender, EventArgs e)
-		{
-			if (!this.UseRealScrollBarTrackSpan)
-			{
-				this.ResetTrackSpan();
-				this.RaiseTrackChangedEvent();
-			}
 		}
 
 		void OnScrollBarTrackSpanChanged(object sender, EventArgs e)
@@ -235,7 +222,7 @@ namespace ProgressiveScroll
 
 		public double GetYCoordinateOfBufferPosition(SnapshotPoint bufferPosition)
 		{
-			return _scrollMap.GetCoordinateAtBufferPosition(bufferPosition);
+			return _scale * _scrollMap.GetCoordinateAtBufferPosition(bufferPosition);
 		}
 
 		public double GetYCoordinateOfScrollMapPosition(double scrollMapPosition)
@@ -249,7 +236,7 @@ namespace ProgressiveScroll
 
 		public SnapshotPoint GetBufferPositionOfYCoordinate(double y)
 		{
-			return _scrollMap.GetBufferPositionAtCoordinate(y);
+			return _scrollMap.GetBufferPositionAtCoordinate(y / _scale);
 		}
 
 		public double TrackSpanTop
@@ -272,11 +259,6 @@ namespace ProgressiveScroll
 			get
 			{
 				return _textView.ViewportHeight / _textView.LineHeight;
-				/*double minimum = _scrollMap.Start;
-				double maximum = _scrollMap.End;
-				double height = maximum - minimum;
-
-				return _scrollMap.ThumbSize / (height + _scrollMap.ThumbSize) * this.TrackSpanHeight;*/
 			}
 		}
 

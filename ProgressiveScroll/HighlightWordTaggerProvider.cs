@@ -17,7 +17,7 @@ namespace ProgressiveScroll
 {
 	[Export(typeof(IVsTextViewCreationListener))]
 	[Export(typeof(IViewTaggerProvider))]
-	[ContentType("text")]
+	[ContentType("code")]
 	[TextViewRole(PredefinedTextViewRoles.Editable)]
 	[TagType(typeof(TextMarkerTag))]
 	internal class HighlightWordTaggerProvider : IViewTaggerProvider, IVsTextViewCreationListener
@@ -31,7 +31,8 @@ namespace ProgressiveScroll
 		[Import(typeof(IVsEditorAdaptersFactoryService))]
 		internal IVsEditorAdaptersFactoryService _editorFactory = null;
 
-		public HighlightWordTagger Tagger { get; set; }
+		private static Dictionary<ITextView, HighlightWordTagger> _taggers = new Dictionary<ITextView, HighlightWordTagger>();
+		public static Dictionary<ITextView, HighlightWordTagger> Taggers { get { return _taggers; } }
 
 		public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag
 		{
@@ -42,8 +43,9 @@ namespace ProgressiveScroll
 			ITextStructureNavigator textStructureNavigator =
 				TextStructureNavigatorSelector.GetTextStructureNavigator(buffer);
 
-			Tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator);
-			return Tagger as ITagger<T>;
+			HighlightWordTagger tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator);
+			Taggers[textView] = tagger;
+			return tagger as ITagger<T>;
 		}
 
 		public void VsTextViewCreated(IVsTextView textViewAdapter)
@@ -53,7 +55,7 @@ namespace ProgressiveScroll
 				return;
 
 			WordSelectionCommandFilter commandFilter = new WordSelectionCommandFilter(textView);
-			Tagger.CommandFilter = commandFilter;
+			Taggers[textView].CommandFilter = commandFilter;
 
 			IOleCommandTarget next;
 			if (textViewAdapter != null)

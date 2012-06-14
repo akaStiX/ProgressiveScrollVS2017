@@ -10,7 +10,7 @@ namespace ProgressiveScroll
 	using System.Windows.Media.Imaging;
 	using Microsoft.VisualStudio.Text;
 	using Microsoft.VisualStudio.Text.Outlining;
-using Microsoft.VisualStudio.Text.Formatting;
+	using Microsoft.VisualStudio.Text.Formatting;
 	using Microsoft.VisualStudio.Text.Document;
 
 	class ProgressiveScrollElement
@@ -20,7 +20,6 @@ using Microsoft.VisualStudio.Text.Formatting;
 		private readonly IVerticalScrollBar _scrollBar;
 		private readonly ProgressiveScroll _progressiveScroll;
 		private readonly ITagAggregator<ChangeTag> _changeTagAggregator;
-
 
 		private Dictionary<string, int> _keywords;
 
@@ -40,11 +39,13 @@ using Microsoft.VisualStudio.Text.Formatting;
 		private Color _visibleColor;
 		private Color _changedColor;
 		private Color _unsavedChangedColor;
+		private Color _highlightColor;
 
 		private Brush _whitespaceBrush;
 		private Brush _visibleBrush;
 		private Brush _changedBrush;
 		private Brush _unsavedChangedBrush;
+		private Brush _highlightBrush;
 
 		/// <summary>
 		/// Constructor for the ProgressiveScrollElement.
@@ -52,7 +53,12 @@ using Microsoft.VisualStudio.Text.Formatting;
 		/// <param name="textView">ITextView to which this ProgressiveScrollElement will be attacheded.</param>
 		/// <param name="verticalScrollbar">Vertical scrollbar of the ITextViewHost that contains <paramref name="textView"/>.</param>
 		/// <param name="tagFactory">MEF tag factory.</param>
-		public ProgressiveScrollElement(IWpfTextView textView, IOutliningManager outliningManager, ITagAggregator<ChangeTag> changeTagAggregator, IVerticalScrollBar verticalScrollbar, ProgressiveScroll progressiveScroll)
+		public ProgressiveScrollElement(
+			IWpfTextView textView,
+			IOutliningManager outliningManager,
+			ITagAggregator<ChangeTag> changeTagAggregator,
+			IVerticalScrollBar verticalScrollbar,
+			ProgressiveScroll progressiveScroll)
 		{
 			_textView = textView;
 			_outliningManager = outliningManager;
@@ -63,15 +69,17 @@ using Microsoft.VisualStudio.Text.Formatting;
 			_whitespaceColor = Color.FromRgb(0, 0, 0);
 			_normalColor = Color.FromRgb(255, 255, 255);
 			_commentColor = Color.FromRgb(255, 128, 255);
-			_stringColor = Color.FromRgb(163, 21, 21);
+			_stringColor = Color.FromRgb(255, 255, 255);
 			_visibleColor = Color.FromArgb(64, 255, 255, 255);
 			_changedColor = Color.FromRgb(108, 226, 108);
 			_unsavedChangedColor = Color.FromRgb(255, 238, 98);
+			_highlightColor = Colors.Orange;
 
 			_whitespaceBrush = new SolidColorBrush(_whitespaceColor);
 			_visibleBrush = new SolidColorBrush(_visibleColor);
 			_changedBrush = new SolidColorBrush(_changedColor);
 			_unsavedChangedBrush = new SolidColorBrush(_unsavedChangedColor);
+			_highlightBrush = new SolidColorBrush(_highlightColor);
 
 			_width = 128;
 			_stride = (_width * pf.BitsPerPixel + 7) / 8;
@@ -116,15 +124,7 @@ using Microsoft.VisualStudio.Text.Formatting;
 				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(0.0, firstLine, _progressiveScroll.ActualWidth, numEditorLines));
 
 				RenderChanges(drawingContext);
-
-
-
-				/*SnapshotPoint start = new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine .Snapshot, _textView.TextViewLines.FirstVisibleLine.Start);
-
-				double viewportTop =  Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(start));
-				double viewportBottom = Math.Ceiling(Math.Max(GetYCoordinateOfLineBottom(_textView.TextViewLines.LastVisibleLine), viewportTop + _minViewportHeight));
-
-				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(-_scrollBarWidth, viewportTop, _width, viewportBottom));*/
+				RenderHighlights(drawingContext);
 			}
 		}
 
@@ -146,6 +146,17 @@ using Microsoft.VisualStudio.Text.Formatting;
 				currentCollapsedSnapshotSpan = currentCollapsedRegion.Current.Extent.GetSpan(_textView.TextBuffer.CurrentSnapshot);
 			}
 
+			// Get the highlights
+			IEnumerable<ITagSpan<HighlightWordTag>> highlightsEnumerable = HighlightWordTaggerProvider.Taggers[_textView].GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
+			List<SnapshotSpan> highlightList = new List<SnapshotSpan>();
+			foreach (ITagSpan<HighlightWordTag> highlight in highlightsEnumerable)
+			{
+				highlightList.Add(highlight.Span);
+			}
+			NormalizedSnapshotSpanCollection highlights = new NormalizedSnapshotSpanCollection(highlightList);
+			int highlightIndex = 0;
+
+			// Create the image buffer
 			_height = _textView.VisualSnapshot.LineCount;
 			_pixels = new byte[_stride * _height];
 
@@ -299,17 +310,18 @@ using Microsoft.VisualStudio.Text.Formatting;
 						break;
 					}
 
-					// Advance the highlight interval, if needed.
-					//while(crHighlight && (realColumn >= (int)crHighlight->end))
-					//	crHighlight = crHighlight->next;
-
-					// Override the color with the match color if inside a marker.
-					//if(crHighlight && (realColumn >= (int)crHighlight->start))
-					//	textFlags |= TextFlag_Highlight;
+					while (highlightIndex < highlights.Count && i >= highlights[highlightIndex].End.Position)
+					{
+						++highlightIndex;
+					}
 
 					if (isLineVisible)
 					{
-						if (commentType != CommentType.None)
+						if (highlightIndex < highlights.Count && i >= highlights[highlightIndex].Start.Position)
+						{
+							SetPixel(virtualColumn, virtualLine, _highlightColor);
+						}
+						else if (commentType != CommentType.None)
 						{
 							SetPixel(virtualColumn, virtualLine, _commentColor);
 						}
@@ -461,7 +473,6 @@ using Microsoft.VisualStudio.Text.Formatting;
 
 			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], _changedBrush);
 			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], _unsavedChangedBrush);
-			//DrawChange(drawingContext, ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved, allChanges);
 		}
 
 		internal static NormalizedSnapshotSpanCollection[] GetUnifiedChanges(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<ChangeTag>> tags)
@@ -515,6 +526,51 @@ using Microsoft.VisualStudio.Text.Formatting;
 					brush,
 					null,
 					new Rect(0, yTop, 3, yBottom - yTop));
+			}
+		}
+
+		private void RenderHighlights(DrawingContext drawingContext)
+		{
+			if (HighlightWordTaggerProvider.Taggers[_textView] == null)
+			{
+				return;
+			}
+
+			NormalizedSnapshotSpanCollection spans = new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length));
+			IEnumerable<ITagSpan<HighlightWordTag>> tags = HighlightWordTaggerProvider.Taggers[_textView].GetTags(spans);
+			List<SnapshotSpan> highlightList = new List<SnapshotSpan>();
+			foreach (ITagSpan<HighlightWordTag> highlight in tags)
+			{
+				highlightList.Add(highlight.Span);
+			}
+
+			NormalizedSnapshotSpanCollection highlights = new NormalizedSnapshotSpanCollection(highlightList);
+
+			if (highlights.Count > 0)
+			{
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].Start)) - 2;
+				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].End)) + 2;
+
+				for (int i = 1; i < highlights.Count; ++i)
+				{
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(highlights[i].Start) - 2;
+					if (yBottom < y)
+					{
+						drawingContext.DrawRectangle(
+							_highlightBrush,
+							null,
+							new Rect(_progressiveScroll.ActualWidth - 3, yTop, 3, yBottom - yTop));
+
+						yTop = y;
+					}
+
+					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[i].End)) + 2;
+				}
+
+				drawingContext.DrawRectangle(
+					_highlightBrush,
+					null,
+					new Rect(_progressiveScroll.ActualWidth - 3, yTop, 3, yBottom - yTop));
 			}
 		}
 	}
