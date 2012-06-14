@@ -8,14 +8,18 @@ using System.Windows;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text.Document;
+using Microsoft.VisualStudio.Text.Classification;
+using System.ComponentModel.Composition;
 
 namespace ProgressiveScroll
 {
 	/// <summary>
 	/// A class detailing the margin's visual definition including both size and content.
 	/// </summary>
-	class ProgressiveScroll : Grid, IWpfTextViewMargin
+	class ProgressiveScroll : Canvas, IWpfTextViewMargin
 	{
+		public IEditorFormatMapService FormatMapService { get; set; }
+
 		public const string MarginName = "ProgressiveScroll";
 		private bool _isDisposed = false;
 
@@ -31,6 +35,8 @@ namespace ProgressiveScroll
 		{
 			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
 		}
+
+		public ColorSet Colors { get; set; }
 
 
 		/// <summary>
@@ -187,11 +193,13 @@ namespace ProgressiveScroll
 			// Don't bother drawing if we have no content or no area to draw in (implying there are no children)
 			if (ActualWidth > 0.0)
 			{
+				Colors.RefreshColors();
+
 				drawingContext.PushTransform(new TranslateTransform(0.0, -_splitterHeight));
 				Rect viewRect = new Rect(0, 0, ActualWidth, DrawHeight);
 				drawingContext.PushClip(new RectangleGeometry(viewRect));
 				drawingContext.DrawRectangle(
-					new SolidColorBrush(Color.FromRgb(0, 0, 0)),
+					Colors.WhitespaceBrush,
 					null,
 					viewRect);
 

@@ -2,9 +2,9 @@
 <Vsix Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
   <Identifier Id="ProgressiveScroll..1b4c078b-4b80-4cf3-80af-44b9088f8d8f">
     <Name>ProgressiveScroll</Name>
-    <Author></Author>
+    <Author>Xeeb.net</Author>
     <Version>1.0</Version>
-    <Description xml:space="preserve">This is a sample margin extension to the Visual Studio Editor.</Description>
+    <Description xml:space="preserve">Progressive Scroll, a MetalScroll clone that works in VS2010.</Description>
     <Locale>1033</Locale>
     <SupportedProducts>
       <VisualStudio Version="10.0">

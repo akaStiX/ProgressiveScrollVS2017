@@ -15,23 +15,9 @@ using Microsoft.VisualStudio;
 
 namespace ProgressiveScroll
 {
-	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/HighlightWordFormatDefinition")]
-	[UserVisible(true)]
-	internal class HighlightWordFormatDefinition : MarkerFormatDefinition
-	{
-		public HighlightWordFormatDefinition()
-		{
-			this.BackgroundColor = Colors.Orange;
-			this.ForegroundColor = Colors.Orange;
-			this.DisplayName = "Highlight Word";
-			this.ZOrder = 5;
-		}
-	}
-
 	internal class HighlightWordTag : TextMarkerTag
 	{
-		public HighlightWordTag() : base("MarkerFormatDefinition/HighlightWordFormatDefinition")
+		public HighlightWordTag() : base("MarkerFormatDefinition/PSHighlightWordFormatDefinition")
 		{
 		}
 	}
@@ -60,16 +46,6 @@ namespace ProgressiveScroll
 			this.WordSpans = new NormalizedSnapshotSpanCollection();
 			this.CurrentWord = null;
 			this.View.Selection.SelectionChanged += SelectionChanged;
-			//this.View.LayoutChanged += ViewLayoutChanged;
-		}
-
-		void ViewLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
-		{
-			// If a new snapshot wasn't generated, then skip this layout
-			if (e.NewSnapshot != e.OldSnapshot)
-			{
-				UpdateSelection(View.Caret.Position);
-			}
 		}
 
 		void SelectionChanged(object sender, EventArgs e)
@@ -245,20 +221,19 @@ namespace ProgressiveScroll
 			}
 
 			if (_nextTarget != null)
+			{
 				return _nextTarget.QueryStatus(pguidCmdGroup, cCmds, prgCmds, pCmdText);
+			}
 			else
-				return 0;
+			{
+				return VSConstants.S_OK;
+			}
 		}
 
 		int IOleCommandTarget.Exec(ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
 		{
 			if (pguidCmdGroup == VSConstants.VSStd2K)
 			{
-				/*if (nCmdID == (uint)VSConstants.VSStd2KCmdID.SELECTCURRENTWORD)
-				{
-					_selected = true;
-				}*/
-
 				if (nCmdID == (uint)VSConstants.VSStd2KCmdID.DOUBLECLICK)
 				{
 					_selected = true;
@@ -270,9 +245,13 @@ namespace ProgressiveScroll
 			}
 
 			if (_nextTarget != null)
+			{
 				return _nextTarget.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+			}
 			else
-				return 0;
+			{
+				return VSConstants.S_OK;
+			}
 		}
 	}
 }

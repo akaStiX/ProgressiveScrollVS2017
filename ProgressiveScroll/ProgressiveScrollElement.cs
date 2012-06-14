@@ -12,6 +12,11 @@ namespace ProgressiveScroll
 	using Microsoft.VisualStudio.Text.Outlining;
 	using Microsoft.VisualStudio.Text.Formatting;
 	using Microsoft.VisualStudio.Text.Document;
+	using System.ComponentModel.Composition;
+	using Microsoft.VisualStudio.Text.Classification;
+	using Microsoft.VisualStudio.Utilities;
+
+
 
 	class ProgressiveScrollElement
 	{
@@ -23,29 +28,15 @@ namespace ProgressiveScroll
 
 		private Dictionary<string, int> _keywords;
 
-		private readonly int _minViewportHeight = 5;
 		private int _width;
 		private int _height;
 
 		private byte[] _pixels;
-		private readonly PixelFormat pf = PixelFormats.Rgb24;
+		private readonly PixelFormat _pf = PixelFormats.Rgb24;
 		private int _stride;
 		private BitmapSource _bitmap;
 
-		private Color _whitespaceColor;
-		private Color _normalColor;
-		private Color _commentColor;
-		private Color _stringColor;
-		private Color _visibleColor;
-		private Color _changedColor;
-		private Color _unsavedChangedColor;
-		private Color _highlightColor;
-
-		private Brush _whitespaceBrush;
-		private Brush _visibleBrush;
-		private Brush _changedBrush;
-		private Brush _unsavedChangedBrush;
-		private Brush _highlightBrush;
+		private ColorSet _colorSet;
 
 		/// <summary>
 		/// Constructor for the ProgressiveScrollElement.
@@ -66,23 +57,8 @@ namespace ProgressiveScroll
 			_progressiveScroll = progressiveScroll;
 			_changeTagAggregator = changeTagAggregator;
 
-			_whitespaceColor = Color.FromRgb(0, 0, 0);
-			_normalColor = Color.FromRgb(255, 255, 255);
-			_commentColor = Color.FromRgb(255, 128, 255);
-			_stringColor = Color.FromRgb(255, 255, 255);
-			_visibleColor = Color.FromArgb(64, 255, 255, 255);
-			_changedColor = Color.FromRgb(108, 226, 108);
-			_unsavedChangedColor = Color.FromRgb(255, 238, 98);
-			_highlightColor = Colors.Orange;
-
-			_whitespaceBrush = new SolidColorBrush(_whitespaceColor);
-			_visibleBrush = new SolidColorBrush(_visibleColor);
-			_changedBrush = new SolidColorBrush(_changedColor);
-			_unsavedChangedBrush = new SolidColorBrush(_unsavedChangedColor);
-			_highlightBrush = new SolidColorBrush(_highlightColor);
-
 			_width = 128;
-			_stride = (_width * pf.BitsPerPixel + 7) / 8;
+			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
 			_height = 0;
 			_pixels = null;
 
@@ -113,15 +89,17 @@ namespace ProgressiveScroll
 		{
 			if (!this._textView.IsClosed)
 			{
+				_colorSet = _progressiveScroll.Colors;
+
 				RenderText();
 
 				Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, Math.Min(_height, _progressiveScroll.DrawHeight));
 				drawingContext.DrawImage(_bitmap, rect);
 
-				int numEditorLines = (int)(_textView.ViewportHeight / _textView.LineHeight);
+				int numEditorLines = Math.Max((int)(_textView.ViewportHeight / _textView.LineHeight), 5);
 				int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
 
-				drawingContext.DrawRectangle(_visibleBrush, null, new Rect(0.0, firstLine, _progressiveScroll.ActualWidth, numEditorLines));
+				drawingContext.DrawRectangle(_colorSet.VisibleBrush, null, new Rect(0.0, firstLine, _progressiveScroll.ActualWidth, numEditorLines));
 
 				RenderChanges(drawingContext);
 				RenderHighlights(drawingContext);
@@ -159,6 +137,15 @@ namespace ProgressiveScroll
 			// Create the image buffer
 			_height = _textView.VisualSnapshot.LineCount;
 			_pixels = new byte[_stride * _height];
+
+			int numPixels = _height * _stride / (_pf.BitsPerPixel / 8);
+			Color clearColor = _colorSet.WhitespaceBrush.Color;
+			for (int i = 0; i < numPixels; ++i)
+			{
+				_pixels[3 * i] = clearColor.R;
+				_pixels[3 * i + 1] = clearColor.G;
+				_pixels[3 * i + 2] = clearColor.B;
+			}
 
 			string text = _textView.TextBuffer.CurrentSnapshot.GetText();
 
@@ -319,19 +306,19 @@ namespace ProgressiveScroll
 					{
 						if (highlightIndex < highlights.Count && i >= highlights[highlightIndex].Start.Position)
 						{
-							SetPixel(virtualColumn, virtualLine, _highlightColor);
+							SetPixel(virtualColumn, virtualLine, _colorSet.HighlightBrush.Color);
 						}
 						else if (commentType != CommentType.None)
 						{
-							SetPixel(virtualColumn, virtualLine, _commentColor);
+							SetPixel(virtualColumn, virtualLine, _colorSet.CommentBrush.Color);
 						}
 						else if (inString)
 						{
-							SetPixel(virtualColumn, virtualLine, _stringColor);
+							SetPixel(virtualColumn, virtualLine, _colorSet.StringBrush.Color);
 						}
 						else
 						{
-							SetPixel(virtualColumn, virtualLine, _normalColor);
+							SetPixel(virtualColumn, virtualLine, _colorSet.TextBrush.Color);
 						}
 					}
 				}
@@ -346,7 +333,7 @@ namespace ProgressiveScroll
 
 					if (isLineVisible)
 					{
-						SetPixels(virtualColumn, virtualLine, _whitespaceColor, numChars);
+						SetPixels(virtualColumn, virtualLine, _colorSet.WhitespaceBrush.Color, numChars);
 					}
 				}
 
@@ -359,7 +346,7 @@ namespace ProgressiveScroll
 				_height,
 				96,
 				96,
-				pf,
+				_pf,
 				null,
 				_pixels,
 				_stride);
@@ -471,8 +458,8 @@ namespace ProgressiveScroll
 				_textView.TextSnapshot,
 				_changeTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
 
-			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], _changedBrush);
-			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], _unsavedChangedBrush);
+			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], _colorSet.ChangedBrush);
+			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], _colorSet.UnsavedChangedBrush);
 		}
 
 		internal static NormalizedSnapshotSpanCollection[] GetUnifiedChanges(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<ChangeTag>> tags)
@@ -557,7 +544,7 @@ namespace ProgressiveScroll
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
-							_highlightBrush,
+							_colorSet.HighlightBrush,
 							null,
 							new Rect(_progressiveScroll.ActualWidth - 3, yTop, 3, yBottom - yTop));
 
@@ -568,7 +555,7 @@ namespace ProgressiveScroll
 				}
 
 				drawingContext.DrawRectangle(
-					_highlightBrush,
+					_colorSet.HighlightBrush,
 					null,
 					new Rect(_progressiveScroll.ActualWidth - 3, yTop, 3, yBottom - yTop));
 			}

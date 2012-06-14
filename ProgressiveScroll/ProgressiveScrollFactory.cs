@@ -8,6 +8,7 @@
 	using System;
 	using Microsoft.VisualStudio.Text.Outlining;
 	using Microsoft.VisualStudio.Text.Document;
+	using Microsoft.VisualStudio.Text.Classification;
 
 	/// <summary>
 	/// Export a <see cref="IWpfTextViewMarginProvider"/>, which returns an instance of the margin for the editor
@@ -33,6 +34,9 @@
 		[Import]
 		internal IViewTagAggregatorFactoryService _tagAggregatorFactoryService { get; private set; }
 
+		[Import]
+		internal IEditorFormatMapService FormatMapService;
+
 		private SimpleScrollBar _scrollBar;
 
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
@@ -47,12 +51,16 @@
 				_scrollMapFactory,
 				true);
 
-			return new ProgressiveScroll(
+			ProgressiveScroll progressiveScroll = new ProgressiveScroll(
 				textViewHost,
 				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
 				_scrollBar,
 				this);
+
+			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService);
+
+			return progressiveScroll;
 		}
 	}
 }
