@@ -18,7 +18,7 @@ namespace ProgressiveScroll
 	[Export(typeof(IVsTextViewCreationListener))]
 	[Export(typeof(IViewTaggerProvider))]
 	[ContentType("code")]
-	[TextViewRole(PredefinedTextViewRoles.Editable)]
+	[TextViewRole(PredefinedTextViewRoles.Document)]
 	[TagType(typeof(TextMarkerTag))]
 	internal class HighlightWordTaggerProvider : IViewTaggerProvider, IVsTextViewCreationListener
 	{

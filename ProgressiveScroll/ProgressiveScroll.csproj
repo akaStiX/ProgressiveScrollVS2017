@@ -72,7 +72,7 @@
     <Compile Include="HighlightWordTag.cs" />
     <Compile Include="HighlightWordTaggerProvider.cs" />
     <Compile Include="ProgressiveScroll.cs" />
-    <Compile Include="ProgressiveScrollElement.cs" />
+    <Compile Include="ProgressiveScrollView.cs" />
     <Compile Include="ProgressiveScrollFactory.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SimpleScrollBar.cs" />

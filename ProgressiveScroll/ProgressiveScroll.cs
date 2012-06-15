@@ -13,36 +13,29 @@ using System.ComponentModel.Composition;
 
 namespace ProgressiveScroll
 {
-	/// <summary>
-	/// A class detailing the margin's visual definition including both size and content.
-	/// </summary>
 	class ProgressiveScroll : Canvas, IWpfTextViewMargin
 	{
 		public IEditorFormatMapService FormatMapService { get; set; }
-
+		public double DrawHeight
+		{
+			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
+		}
 		public const string MarginName = "ProgressiveScroll";
+		public ColorSet Colors { get; set; }
+
+
+
 		private bool _isDisposed = false;
 
 		private IWpfTextViewHost _textViewHost;
 		private IWpfTextView _textView;
 		private IVerticalScrollBar _scrollBar;
-		private ProgressiveScrollElement _progressiveScrollElement;
+		private ProgressiveScrollView _progressiveScrollView;
 
 		private readonly int _splitterHeight = 17;
 		private readonly int _horizontalScrollBarHeight = 17;
 
-		public double DrawHeight
-		{
-			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
-		}
 
-		public ColorSet Colors { get; set; }
-
-
-		/// <summary>
-		/// Creates a <see cref="ProgressiveScroll"/> for a given <see cref="IWpfTextView"/>.
-		/// </summary>
-		/// <param name="textView">The <see cref="IWpfTextView"/> to attach the margin to.</param>
 		public ProgressiveScroll(
 			IWpfTextViewHost textViewHost,
 			IOutliningManager outliningManager,
@@ -63,7 +56,7 @@ namespace ProgressiveScroll
 
 			Width = 128;
 
-			_progressiveScrollElement = new ProgressiveScrollElement(textViewHost.TextView, outliningManager, changeTagAggregator, scrollBar, this);
+			_progressiveScrollView = new ProgressiveScrollView(textViewHost.TextView, outliningManager, changeTagAggregator, scrollBar, this);
 
 			RegisterEvents();
 		}
@@ -74,14 +67,8 @@ namespace ProgressiveScroll
 				throw new ObjectDisposedException(MarginName);
 		}
 
-		/// <summary>
-		/// The <see cref="Sytem.Windows.FrameworkElement"/> that implements the visual representation
-		/// of the margin.
-		/// </summary>
 		public System.Windows.FrameworkElement VisualElement
 		{
-			// Since this margin implements Canvas, this is the object which renders
-			// the margin.
 			get
 			{
 				ThrowIfDisposed();
@@ -100,7 +87,6 @@ namespace ProgressiveScroll
 
 		public bool Enabled
 		{
-			// The margin should always be enabled
 			get
 			{
 				ThrowIfDisposed();
@@ -108,11 +94,6 @@ namespace ProgressiveScroll
 			}
 		}
 
-		/// <summary>
-		/// Returns an instance of the margin if this is the margin that has been requested.
-		/// </summary>
-		/// <param name="marginName">The name of the margin requested</param>
-		/// <returns>An instance of ProgressiveScroll or null</returns>
 		public ITextViewMargin GetTextViewMargin(string marginName)
 		{
 			return (marginName == ProgressiveScroll.MarginName) ? (IWpfTextViewMargin)this : null;
@@ -151,6 +132,7 @@ namespace ProgressiveScroll
 
 		private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
 		{
+			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
 
@@ -161,6 +143,7 @@ namespace ProgressiveScroll
 
 		private void OnTagsChanged(object sender, SnapshotSpanEventArgs e)
 		{
+			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
 
@@ -205,7 +188,7 @@ namespace ProgressiveScroll
 
 				this.VisualBitmapScalingMode = System.Windows.Media.BitmapScalingMode.Fant;
 
-				_progressiveScrollElement.Render(drawingContext);
+				_progressiveScrollView.Render(drawingContext);
 
 				drawingContext.Pop();
 			}

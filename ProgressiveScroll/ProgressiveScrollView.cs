@@ -18,7 +18,7 @@ namespace ProgressiveScroll
 
 
 
-	class ProgressiveScrollElement
+	class ProgressiveScrollView
 	{
 		private readonly IWpfTextView _textView;
 		private readonly IOutliningManager _outliningManager;
@@ -31,6 +31,7 @@ namespace ProgressiveScroll
 		private int _width;
 		private int _height;
 
+		public bool TextDirty { get; set; }
 		private byte[] _pixels;
 		private readonly PixelFormat _pf = PixelFormats.Rgb24;
 		private int _stride;
@@ -38,13 +39,8 @@ namespace ProgressiveScroll
 
 		private ColorSet _colorSet;
 
-		/// <summary>
-		/// Constructor for the ProgressiveScrollElement.
-		/// </summary>
-		/// <param name="textView">ITextView to which this ProgressiveScrollElement will be attacheded.</param>
-		/// <param name="verticalScrollbar">Vertical scrollbar of the ITextViewHost that contains <paramref name="textView"/>.</param>
-		/// <param name="tagFactory">MEF tag factory.</param>
-		public ProgressiveScrollElement(
+
+		public ProgressiveScrollView(
 			IWpfTextView textView,
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
@@ -61,6 +57,7 @@ namespace ProgressiveScroll
 			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
 			_height = 0;
 			_pixels = null;
+			TextDirty = true;
 
 			AddKeywords();
 		}
@@ -91,7 +88,10 @@ namespace ProgressiveScroll
 			{
 				_colorSet = _progressiveScroll.Colors;
 
-				RenderText();
+				if (TextDirty)
+				{
+					RenderText();
+				}
 
 				Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, Math.Min(_height, _progressiveScroll.DrawHeight));
 				drawingContext.DrawImage(_bitmap, rect);
@@ -138,6 +138,7 @@ namespace ProgressiveScroll
 			_height = _textView.VisualSnapshot.LineCount;
 			_pixels = new byte[_stride * _height];
 
+			// Clear the image buffer with the whitespace color
 			int numPixels = _height * _stride / (_pf.BitsPerPixel / 8);
 			Color clearColor = _colorSet.WhitespaceBrush.Color;
 			for (int i = 0; i < numPixels; ++i)
@@ -157,8 +158,6 @@ namespace ProgressiveScroll
 			bool inKeyword = false;
 			bool inString = false;
 
-			// Here "virtual" refers to rendered coordinates, which can differ from real text coordinates due to word wrapping,
-			// hidden text regions and tabs.
 			int virtualLine = 0;
 			int virtualColumn = 0;
 			int realLine = 0;
@@ -350,6 +349,8 @@ namespace ProgressiveScroll
 				null,
 				_pixels,
 				_stride);
+
+			TextDirty = false;
 		}
 
 		private void SetPixel(int x, int y, Color c)
