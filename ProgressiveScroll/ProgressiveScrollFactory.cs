@@ -9,6 +9,7 @@
 	using Microsoft.VisualStudio.Text.Outlining;
 	using Microsoft.VisualStudio.Text.Document;
 	using Microsoft.VisualStudio.Text.Classification;
+	using Microsoft.VisualStudio.Editor;
 
 	/// <summary>
 	/// Export a <see cref="IWpfTextViewMarginProvider"/>, which returns an instance of the margin for the editor
@@ -55,6 +56,7 @@
 				textViewHost,
 				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
+				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textViewHost.TextView),
 				_scrollBar,
 				this);
 

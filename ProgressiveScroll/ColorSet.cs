@@ -94,6 +94,36 @@ namespace ProgressiveScroll
 		}
 	}
 
+	[Export(typeof(EditorFormatDefinition))]
+	[Name("MarkerFormatDefinition/PSBreakpointFormatDefinition")]
+	[UserVisible(true)]
+	internal class BreakpointFormatDefinition : MarkerFormatDefinition
+	{
+		public BreakpointFormatDefinition()
+		{
+			this.BackgroundColor = Colors.Black;
+			this.BackgroundCustomizable = false;
+			this.ForegroundColor = Colors.Red;
+			this.DisplayName = "Progressive Scroll Breakpoints";
+			this.ZOrder = 5;
+		}
+	}
+
+	[Export(typeof(EditorFormatDefinition))]
+	[Name("MarkerFormatDefinition/PSBookmarkFormatDefinition")]
+	[UserVisible(true)]
+	internal class BookmarkFormatDefinition : MarkerFormatDefinition
+	{
+		public BookmarkFormatDefinition()
+		{
+			this.BackgroundColor = Colors.Black;
+			this.BackgroundCustomizable = false;
+			this.ForegroundColor = Colors.Blue;
+			this.DisplayName = "Progressive Scroll Bookmarks";
+			this.ZOrder = 5;
+		}
+	}
+
 	class ColorSet
 	{
 		private ITextView _textView;
@@ -107,6 +137,8 @@ namespace ProgressiveScroll
 		public SolidColorBrush ChangedBrush { get; private set; }
 		public SolidColorBrush UnsavedChangedBrush { get; private set; }
 		public SolidColorBrush HighlightBrush { get; private set; }
+		public SolidColorBrush BreakpointBrush { get; private set; }
+		public SolidColorBrush BookmarkBrush { get; private set; }
 
 		public ColorSet(ITextView textView, IEditorFormatMapService formatMapService)
 		{
@@ -139,6 +171,12 @@ namespace ProgressiveScroll
 
 			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSHighlightWordFormatDefinition");
 			HighlightBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+
+			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSBreakpointFormatDefinition");
+			BreakpointBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+
+			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSBookmarkFormatDefinition");
+			BookmarkBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
 		}
 
 	}

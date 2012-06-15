@@ -10,6 +10,7 @@ using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text.Document;
 using Microsoft.VisualStudio.Text.Classification;
 using System.ComponentModel.Composition;
+using Microsoft.VisualStudio.Editor;
 
 namespace ProgressiveScroll
 {
@@ -30,6 +31,7 @@ namespace ProgressiveScroll
 		private IWpfTextViewHost _textViewHost;
 		private IWpfTextView _textView;
 		private IVerticalScrollBar _scrollBar;
+		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
 		private ProgressiveScrollView _progressiveScrollView;
 
 		private readonly int _splitterHeight = 17;
@@ -40,6 +42,7 @@ namespace ProgressiveScroll
 			IWpfTextViewHost textViewHost,
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
+			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
 			IVerticalScrollBar scrollBar,
 			ProgressiveScrollFactory factory)
 		{
@@ -51,12 +54,19 @@ namespace ProgressiveScroll
 			_textViewHost = textViewHost;
 			_textView = textViewHost.TextView;
 			_scrollBar = scrollBar;
+			_markerTagAggregator = markerTagAggregator;
 
 			Background = Brushes.Transparent;
 
 			Width = 128;
 
-			_progressiveScrollView = new ProgressiveScrollView(textViewHost.TextView, outliningManager, changeTagAggregator, scrollBar, this);
+			_progressiveScrollView = new ProgressiveScrollView(
+				textViewHost.TextView,
+				outliningManager,
+				changeTagAggregator,
+				markerTagAggregator,
+				scrollBar,
+				this);
 
 			RegisterEvents();
 		}
@@ -110,9 +120,10 @@ namespace ProgressiveScroll
 
 		private void RegisterEvents()
 		{
-			_textView.LayoutChanged += OnLayoutChanged;
-			_scrollBar.TrackSpanChanged += OnTrackSpanChanged;
-			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTagsChanged;
+			_textView.LayoutChanged += OnTextChanged;
+			_scrollBar.TrackSpanChanged += OnViewChanged;
+			_markerTagAggregator.TagsChanged += OnTagsChanged;
+			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
 
 			this.MouseLeftButtonDown += OnMouseLeftButtonDown;
 			this.MouseMove += OnMouseMove;
@@ -121,29 +132,29 @@ namespace ProgressiveScroll
 
 		private void UnregisterEvents()
 		{
-			_textView.LayoutChanged -= OnLayoutChanged;
-			_scrollBar.TrackSpanChanged -= OnTrackSpanChanged;
-			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTagsChanged;
+			_textView.LayoutChanged -= OnTextChanged;
+			_scrollBar.TrackSpanChanged -= OnViewChanged;
+			_markerTagAggregator.TagsChanged -= OnTagsChanged;
+			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTextChanged;
 
 			this.MouseLeftButtonDown -= OnMouseLeftButtonDown;
 			this.MouseMove -= OnMouseMove;
 			this.MouseLeftButtonUp -= OnMouseLeftButtonUp;
 		}
 
-		private void OnLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
+		private void OnTextChanged(object sender, EventArgs e)
 		{
 			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
 
-		private void OnTrackSpanChanged(object sender, EventArgs e)
+		private void OnViewChanged(object sender, EventArgs e)
 		{
 			this.InvalidateVisual();
 		}
 
-		private void OnTagsChanged(object sender, SnapshotSpanEventArgs e)
+		private void OnTagsChanged(object sender, EventArgs e)
 		{
-			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
 
