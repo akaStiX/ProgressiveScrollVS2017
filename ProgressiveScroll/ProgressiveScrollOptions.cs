@@ -18,6 +18,7 @@ namespace ProgressiveScroll
 		public const string PageName = "General";
 
 		public const string ScrollBarWidth = "ScrollBarWidth";
+		public const string CursorOpacity = "CursorOpacity";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -25,15 +26,25 @@ namespace ProgressiveScroll
 	[System.ComponentModel.DesignerCategory("")] // Prevents this file from being opened in design mode.
 	public class GeneralOptionPage : DialogPage
 	{
-		private int _width = 128;
+		private int _scrollBarWidth = 128;
+		private double _cursorOpacity = 0.125;
 
-		[Category("Appearance")]
+		[Category("General")]
 		[DisplayName("Width")]
 		[Description("Width of the scrollbar")]
 		public int ScrollBarWidth
 		{
-			get { return _width; }
-			set { _width = Math.Min(Math.Max(value, 16), 512); }
+			get { return _scrollBarWidth; }
+			set { _scrollBarWidth = Math.Min(Math.Max(value, 16), 512); }
+		}
+
+		[Category("General")]
+		[DisplayName("Cursor opacity")]
+		[Description("Opacity of the visible region.")]
+		public double CursorOpacity
+		{
+			get { return _cursorOpacity; }
+			set { _cursorOpacity = Math.Min(Math.Max(value, 0.0), 1.0); }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)

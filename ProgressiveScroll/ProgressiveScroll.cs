@@ -85,6 +85,8 @@ namespace ProgressiveScroll
 
 		internal void UpdateSettings(GeneralOptionPage options)
 		{
+			Colors.CursorOpacity = options.CursorOpacity;
+			Colors.RefreshColors();
 			int newWidth = options.ScrollBarWidth;
 			_scrollBar.Width = newWidth;
 			Width = newWidth;

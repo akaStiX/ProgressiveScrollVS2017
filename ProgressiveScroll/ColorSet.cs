@@ -140,10 +140,13 @@ namespace ProgressiveScroll
 		public SolidColorBrush BreakpointBrush { get; private set; }
 		public SolidColorBrush BookmarkBrush { get; private set; }
 
-		public ColorSet(ITextView textView, IEditorFormatMapService formatMapService)
+		public double CursorOpacity { get; set; }
+
+		public ColorSet(ITextView textView, IEditorFormatMapService formatMapService, double cursorOpacity)
 		{
 			_textView = textView;
 			_formatMapService = formatMapService;
+			CursorOpacity = cursorOpacity;
 			RefreshColors();
 		}
 
@@ -154,8 +157,7 @@ namespace ProgressiveScroll
 			ResourceDictionary textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSTextFormatDefinition");
 			WhitespaceBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.BackgroundBrushId];
 			TextBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
-			// Note: No clue how I should expose the opacity.
-			VisibleBrush = new SolidColorBrush(Color.FromArgb(32, TextBrush.Color.R, TextBrush.Color.G, TextBrush.Color.B));
+			VisibleBrush = new SolidColorBrush(Color.FromArgb((byte)(CursorOpacity * 255), TextBrush.Color.R, TextBrush.Color.G, TextBrush.Color.B));
 
 			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSCommentFormatDefinition");
 			CommentBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];

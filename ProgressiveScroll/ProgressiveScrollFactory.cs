@@ -56,6 +56,7 @@ using Microsoft.VisualStudio.Shell;
 				env.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
 
 			int width = (int)props.Item(OptionNames.ScrollBarWidth).Value;
+			double cursorOpacity = (double)props.Item(OptionNames.CursorOpacity).Value;
 
 			// Hide the real scroll bar
 			IWpfTextViewMargin realScrollBar = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
@@ -76,7 +77,7 @@ using Microsoft.VisualStudio.Shell;
 				scrollBar,
 				this);
 
-			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService);
+			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService, cursorOpacity);
 
 			return progressiveScroll;
 		}
