@@ -15,14 +15,14 @@ namespace ProgressiveScroll
 	{
 		private ITextView _textView;
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
-		private IVerticalScrollBar _scrollBar;
+		private SimpleScrollBar _scrollBar;
 
 		public ColorSet Colors { get; set; }
 
 		private static readonly int _breakpointType = 73;
 		private static readonly int _bookmarkType = 3;
 
-		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, IVerticalScrollBar scrollBar)
+		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_markerTagAggregator = markerTagAggregator;
@@ -84,7 +84,7 @@ namespace ProgressiveScroll
 						drawingContext.DrawRectangle(
 							brush,
 							null,
-							new Rect(125, yTop, 3, yBottom - yTop));
+							new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
 
 						yTop = y;
 					}
@@ -95,7 +95,7 @@ namespace ProgressiveScroll
 				drawingContext.DrawRectangle(
 					brush,
 					null,
-					new Rect(125, yTop, 3, yBottom - yTop));
+					new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
 			}
 		}
 	}

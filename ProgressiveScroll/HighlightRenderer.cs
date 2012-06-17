@@ -13,11 +13,11 @@ namespace ProgressiveScroll
 	class HighlightRenderer
 	{
 		private ITextView _textView;
-		private IVerticalScrollBar _scrollBar;
+		private SimpleScrollBar _scrollBar;
 
 		public ColorSet Colors { get; set; }
 
-		public HighlightRenderer(ITextView textView, IVerticalScrollBar scrollBar)
+		public HighlightRenderer(ITextView textView, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_scrollBar = scrollBar;
@@ -53,7 +53,7 @@ namespace ProgressiveScroll
 						drawingContext.DrawRectangle(
 							Colors.HighlightBrush,
 							null,
-							new Rect(125, yTop, 3, yBottom - yTop));
+							new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
 
 						yTop = y;
 					}
@@ -64,7 +64,7 @@ namespace ProgressiveScroll
 				drawingContext.DrawRectangle(
 					Colors.HighlightBrush,
 					null,
-					new Rect(125, yTop, 3, yBottom - yTop));
+					new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
 			}
 		}
 

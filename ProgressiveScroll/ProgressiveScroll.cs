@@ -11,6 +11,8 @@ using Microsoft.VisualStudio.Text.Document;
 using Microsoft.VisualStudio.Text.Classification;
 using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Editor;
+using EnvDTE;
+using System.Collections.Generic;
 
 namespace ProgressiveScroll
 {
@@ -24,18 +26,18 @@ namespace ProgressiveScroll
 		public const string MarginName = "ProgressiveScroll";
 		public ColorSet Colors { get; set; }
 
-
-
 		private bool _isDisposed = false;
 
 		private IWpfTextViewHost _textViewHost;
 		private IWpfTextView _textView;
-		private IVerticalScrollBar _scrollBar;
+		private SimpleScrollBar _scrollBar;
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
 		private ProgressiveScrollView _progressiveScrollView;
 
 		private readonly int _splitterHeight = 17;
 		private readonly int _horizontalScrollBarHeight = 17;
+
+		private static Dictionary<ProgressiveScroll, byte> _progressiveScrollDict = new Dictionary<ProgressiveScroll, byte>();
 
 
 		public ProgressiveScroll(
@@ -43,13 +45,15 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
-			IVerticalScrollBar scrollBar,
+			SimpleScrollBar scrollBar,
 			ProgressiveScrollFactory factory)
 		{
 			if (textViewHost == null)
 			{
 				throw new ArgumentNullException("textViewHost");
 			}
+
+			_progressiveScrollDict.Add(this, 0);
 
 			_textViewHost = textViewHost;
 			_textView = textViewHost.TextView;
@@ -58,7 +62,7 @@ namespace ProgressiveScroll
 
 			Background = Brushes.Transparent;
 
-			Width = 128;
+			Width = scrollBar.Width;
 
 			_progressiveScrollView = new ProgressiveScrollView(
 				textViewHost.TextView,
@@ -69,6 +73,24 @@ namespace ProgressiveScroll
 				this);
 
 			RegisterEvents();
+		}
+
+		public static void SettingsChanged(GeneralOptionPage options)
+		{
+			foreach (KeyValuePair<ProgressiveScroll, byte> kv in _progressiveScrollDict)
+			{
+				kv.Key.UpdateSettings(options);
+			}
+		}
+
+		internal void UpdateSettings(GeneralOptionPage options)
+		{
+			int newWidth = options.ScrollBarWidth;
+			_scrollBar.Width = newWidth;
+			Width = newWidth;
+
+			_progressiveScrollView.TextDirty = true;
+			this.InvalidateVisual();
 		}
 
 		private void ThrowIfDisposed()
@@ -113,6 +135,8 @@ namespace ProgressiveScroll
 		{
 			if (!_isDisposed)
 			{
+				HighlightWordTaggerProvider.Taggers.Remove(_textView);
+				_progressiveScrollDict.Remove(this);
 				GC.SuppressFinalize(this);
 				_isDisposed = true;
 			}

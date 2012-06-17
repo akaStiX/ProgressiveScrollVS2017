@@ -10,6 +10,8 @@
 	using Microsoft.VisualStudio.Text.Document;
 	using Microsoft.VisualStudio.Text.Classification;
 	using Microsoft.VisualStudio.Editor;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 
 	/// <summary>
 	/// Export a <see cref="IWpfTextViewMarginProvider"/>, which returns an instance of the margin for the editor
@@ -27,37 +29,51 @@
 		internal IViewTagAggregatorFactoryService TagAggregatorFactoryService { get; set; }
 
 		[Import]
-		internal IScrollMapFactoryService _scrollMapFactory;
+		internal IScrollMapFactoryService _scrollMapFactory { get; set; }
 
 		[Import]
-		internal IOutliningManagerService _outliningManagerService;
+		internal IOutliningManagerService _outliningManagerService { get; set; }
 
 		[Import]
 		internal IViewTagAggregatorFactoryService _tagAggregatorFactoryService { get; private set; }
 
 		[Import]
-		internal IEditorFormatMapService FormatMapService;
+		internal IEditorFormatMapService FormatMapService { get; set; }
 
-		private SimpleScrollBar _scrollBar;
+		private IServiceProvider ServiceProvider { get; set; }
+
+		[ImportingConstructor]
+		private ProgressiveScrollFactory([Import(typeof(SVsServiceProvider))] IServiceProvider serviceProvider)
+		{
+			ServiceProvider = serviceProvider;
+		}
 
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
 		{
+			// Get the width from the options
+			DTE env = (DTE)ServiceProvider.GetService(typeof(DTE));
+			EnvDTE.Properties props =
+				env.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
+
+			int width = (int)props.Item(OptionNames.ScrollBarWidth).Value;
+
+			// Hide the real scroll bar
 			IWpfTextViewMargin realScrollBar = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
 			realScrollBar.VisualElement.MinWidth = 0.0;
 			realScrollBar.VisualElement.Width = 0.0;
 
-			_scrollBar = new SimpleScrollBar(
+			SimpleScrollBar scrollBar = new SimpleScrollBar(
 				textViewHost.TextView,
 				containerMargin,
 				_scrollMapFactory,
-				true);
+				width);
 
 			ProgressiveScroll progressiveScroll = new ProgressiveScroll(
 				textViewHost,
 				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textViewHost.TextView),
-				_scrollBar,
+				scrollBar,
 				this);
 
 			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService);

@@ -22,13 +22,14 @@ namespace ProgressiveScroll
 		private IWpfTextView _textView;
 		private IWpfTextViewMargin _realScrollBarMargin;
 		private IVerticalScrollBar _realScrollBar;
-		private bool _useElidedCoordinates = false;
 
 		private double _extraHeight = 34.0;
 
 		double _trackSpanTop;
 		double _trackSpanBottom;
 		double _scale = 1.0;
+
+		public int Width { get; set; }
 
 		private class ScrollMapWrapper : IScrollMap
 		{
@@ -111,25 +112,9 @@ namespace ProgressiveScroll
 			public event EventHandler MappingChanged;
 		}
 
-		/// <summary>
-		/// If true, map to the view's scrollbar; else map to the scrollMap.
-		/// </summary>
-		public bool UseElidedCoordinates
-		{
-			get { return _useElidedCoordinates; }
-			set
-			{
-				if (value != _useElidedCoordinates)
-				{
-					_useElidedCoordinates = value;
-					this.ResetScrollMap();
-				}
-			}
-		}
-
 		private void ResetScrollMap()
 		{
-			_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, !_useElidedCoordinates);
+			_scrollMap.ScrollMap = _scrollMapFactory.Create(_textView, false);
 		}
 
 		private void ResetTrackSpan()
@@ -161,10 +146,11 @@ namespace ProgressiveScroll
 				handler(this, new EventArgs());
 		}
 
-		public SimpleScrollBar(IWpfTextView textView, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory, bool useElidedCoordinates)
+		public SimpleScrollBar(IWpfTextView textView, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory, int width)
 		{
 			_textView = textView;
 			_textView.LayoutChanged += OnLayoutChanged;
+			Width = width;
 
 			_realScrollBarMargin = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
 
@@ -180,7 +166,6 @@ namespace ProgressiveScroll
 			this.ResetTrackSpan();
 
 			_scrollMapFactory = scrollMapFactory;
-			_useElidedCoordinates = useElidedCoordinates;
 			this.ResetScrollMap();
 
 			_scrollMap.MappingChanged += delegate { this.RaiseTrackChangedEvent(); };
@@ -189,11 +174,7 @@ namespace ProgressiveScroll
 		void OnScrollBarIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
 		{
 			this.ResetTrackSpan();
-
-			if (_useElidedCoordinates)
-				this.ResetScrollMap();  //This will indirectly cause RaiseTrackChangedEvent to be called.
-			else
-				this.RaiseTrackChangedEvent();
+			this.ResetScrollMap();
 		}
 
 		void OnScrollBarTrackSpanChanged(object sender, EventArgs e)

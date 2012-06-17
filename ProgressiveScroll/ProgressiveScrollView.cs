@@ -22,7 +22,7 @@ namespace ProgressiveScroll
 	class ProgressiveScrollView
 	{
 		private readonly IWpfTextView _textView;
-		private readonly IVerticalScrollBar _scrollBar;
+		private readonly SimpleScrollBar _scrollBar;
 		private readonly ProgressiveScroll _progressiveScroll;
 
 		private TextRenderer _textRenderer;
@@ -39,17 +39,17 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerAggregator,
-			IVerticalScrollBar verticalScrollBar,
+			SimpleScrollBar scrollBar,
 			ProgressiveScroll progressiveScroll)
 		{
 			_textView = textView;
-			_scrollBar = verticalScrollBar;
+			_scrollBar = scrollBar;
 			_progressiveScroll = progressiveScroll;
 
-			_textRenderer = new TextRenderer(textView, outliningManager);
-			_changeRenderer = new ChangeRenderer(textView, changeTagAggregator, verticalScrollBar);
-			_highlightRenderer = new HighlightRenderer(textView, verticalScrollBar);
-			_markerRenderer = new MarkerRenderer(textView, markerAggregator, verticalScrollBar);
+			_textRenderer = new TextRenderer(textView, outliningManager, scrollBar);
+			_changeRenderer = new ChangeRenderer(textView, changeTagAggregator, scrollBar);
+			_highlightRenderer = new HighlightRenderer(textView, scrollBar);
+			_markerRenderer = new MarkerRenderer(textView, markerAggregator, scrollBar);
 
 			TextDirty = true;
 		}

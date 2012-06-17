@@ -15,6 +15,7 @@ namespace ProgressiveScroll
 	{
 		private ITextView _textView;
 		private IOutliningManager _outliningManager;
+		private SimpleScrollBar _scrollBar;
 
 		private int _width;
 		private int _height;
@@ -56,11 +57,12 @@ namespace ProgressiveScroll
 			MultiLine
 		};
 
-		public TextRenderer(ITextView textView, IOutliningManager outliningManager)
+		public TextRenderer(ITextView textView, IOutliningManager outliningManager, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_outliningManager = outliningManager;
-			_width = 128;
+			_scrollBar = scrollBar;
+			_width = scrollBar.Width;
 			_height = 0;
 			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
 			_pixels = null;
@@ -88,6 +90,8 @@ namespace ProgressiveScroll
 			int highlightIndex = 0;
 
 			// Create the image buffer
+			_width = _scrollBar.Width;
+			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
 			_height = _textView.VisualSnapshot.LineCount;
 			_pixels = new byte[_stride * _height];
 

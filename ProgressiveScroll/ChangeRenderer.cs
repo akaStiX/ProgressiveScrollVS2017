@@ -15,11 +15,11 @@ namespace ProgressiveScroll
 	{
 		private ITextView _textView;
 		private ITagAggregator<ChangeTag> _changeTagAggregator;
-		private IVerticalScrollBar _scrollBar;
+		private SimpleScrollBar _scrollBar;
 
 		public ColorSet Colors { get; set; }
 
-		public ChangeRenderer(ITextView textView, ITagAggregator<ChangeTag> changeTagAggregator, IVerticalScrollBar scrollBar)
+		public ChangeRenderer(ITextView textView, ITagAggregator<ChangeTag> changeTagAggregator, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_changeTagAggregator = changeTagAggregator;
