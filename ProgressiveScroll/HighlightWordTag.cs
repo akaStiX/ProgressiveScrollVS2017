@@ -15,9 +15,18 @@ using Microsoft.VisualStudio;
 
 namespace ProgressiveScroll
 {
-	internal class HighlightWordTag : TextMarkerTag
+	public static class TypeExports
 	{
-		public HighlightWordTag() : base("MarkerFormatDefinition/PSHighlightWordFormatDefinition")
+		[Export(typeof(ClassificationTypeDefinition))]
+		[Name("PSHighlightWordFormatDefinition")]
+		public static ClassificationTypeDefinition HighlightWordClassificationType;
+	}
+
+
+
+	internal class HighlightWordTag : ClassificationTag
+	{
+		public HighlightWordTag(IClassificationType type) : base(type)
 		{
 		}
 	}
@@ -28,6 +37,7 @@ namespace ProgressiveScroll
 		ITextBuffer SourceBuffer { get; set; }
 		ITextSearchService TextSearchService { get; set; }
 		ITextStructureNavigator TextStructureNavigator { get; set; }
+		IClassificationType ClassificationType { get; set; }
 		NormalizedSnapshotSpanCollection WordSpans { get; set; }
 		SnapshotSpan? CurrentWord { get; set; }
 		SnapshotPoint RequestedPoint { get; set; }
@@ -37,15 +47,21 @@ namespace ProgressiveScroll
 
 		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
-		public HighlightWordTagger(ITextView view, ITextBuffer sourceBuffer, ITextSearchService textSearchService, ITextStructureNavigator textStructureNavigator)
+		public HighlightWordTagger(
+			ITextView view,
+			ITextBuffer sourceBuffer,
+			ITextSearchService textSearchService,
+			ITextStructureNavigator textStructureNavigator,
+			IClassificationType classificationType)
 		{
-			this.View = view;
-			this.SourceBuffer = sourceBuffer;
-			this.TextSearchService = textSearchService;
-			this.TextStructureNavigator = textStructureNavigator;
-			this.WordSpans = new NormalizedSnapshotSpanCollection();
-			this.CurrentWord = null;
-			this.View.Selection.SelectionChanged += SelectionChanged;
+			View = view;
+			SourceBuffer = sourceBuffer;
+			TextSearchService = textSearchService;
+			TextStructureNavigator = textStructureNavigator;
+			ClassificationType = classificationType;
+			WordSpans = new NormalizedSnapshotSpanCollection();
+			CurrentWord = null;
+			View.Selection.SelectionChanged += SelectionChanged;
 		}
 
 		void SelectionChanged(object sender, EventArgs e)
@@ -177,12 +193,12 @@ namespace ProgressiveScroll
 			// Note that we'll yield back the same word again in the wordspans collection;
 			// the duplication here is expected.
 			if (spans.OverlapsWith(new NormalizedSnapshotSpanCollection(currentWord)))
-				yield return new TagSpan<HighlightWordTag>(currentWord, new HighlightWordTag());
+				yield return new TagSpan<HighlightWordTag>(currentWord, new HighlightWordTag(ClassificationType));
 
 			// Second, yield all the other words in the file
 			foreach (SnapshotSpan span in NormalizedSnapshotSpanCollection.Overlap(spans, wordSpans))
 			{
-				yield return new TagSpan<HighlightWordTag>(span, new HighlightWordTag());
+				yield return new TagSpan<HighlightWordTag>(span, new HighlightWordTag(ClassificationType));
 			}
 		}
 	}

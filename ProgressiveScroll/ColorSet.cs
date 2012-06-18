@@ -18,9 +18,9 @@ namespace ProgressiveScroll
 	{
 		public TextFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.ForegroundColor = Colors.White;
-			this.DisplayName = "Progressive Scroll Text";
+			DisplayName = "Progressive Scroll Text";
+			BackgroundColor = Colors.Black;
+			ForegroundColor = Colors.White;
 		}
 	}
 
@@ -31,10 +31,10 @@ namespace ProgressiveScroll
 	{
 		public CommentFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Color.FromRgb(255, 128, 255);
-			this.DisplayName = "Progressive Scroll Comments";
+			DisplayName = "Progressive Scroll Comments";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Color.FromRgb(255, 128, 255);
 		}
 	}
 
@@ -45,10 +45,10 @@ namespace ProgressiveScroll
 	{
 		public StringFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Colors.White;
-			this.DisplayName = "Progressive Scroll Strings";
+			DisplayName = "Progressive Scroll Strings";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Colors.White;
 		}
 	}
 
@@ -59,10 +59,10 @@ namespace ProgressiveScroll
 	{
 		public ChangesFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Color.FromRgb(108, 226, 108);
-			this.DisplayName = "Progressive Scroll Changes";
+			DisplayName = "Progressive Scroll Changes";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Color.FromRgb(108, 226, 108);
 		}
 	}
 
@@ -73,24 +73,25 @@ namespace ProgressiveScroll
 	{
 		public UnsavedChangesFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Color.FromRgb(255, 238, 98);
-			this.DisplayName = "Progressive Scroll Unsaved Changes";
+			DisplayName = "Progressive Scroll Unsaved Changes";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Color.FromRgb(255, 238, 98);
 		}
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSHighlightWordFormatDefinition")]
+	[ClassificationType(ClassificationTypeNames = "PSHighlightWordFormatDefinition")]
+	[Name("ClassificationFormatDefinition/PSHighlightWordFormatDefinition")]
 	[UserVisible(true)]
-	internal class HighlightWordFormatDefinition : MarkerFormatDefinition
+	[Order(After = Priority.High)]
+	public sealed class RegionForeground : ClassificationFormatDefinition
 	{
-		public HighlightWordFormatDefinition()
+		public RegionForeground()
 		{
-			this.BackgroundColor = Colors.Orange;
-			this.ForegroundColor = Colors.Orange;
-			this.DisplayName = "Progressive Scroll Highlights";
-			this.ZOrder = 5;
+			DisplayName = "Progressive Scroll Highlights";
+			BackgroundColor = Colors.Orange;
+			ForegroundColor = Colors.Black;
 		}
 	}
 
@@ -101,11 +102,10 @@ namespace ProgressiveScroll
 	{
 		public BreakpointFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Colors.Red;
-			this.DisplayName = "Progressive Scroll Breakpoints";
-			this.ZOrder = 5;
+			DisplayName = "Progressive Scroll Breakpoints";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Colors.Red;
 		}
 	}
 
@@ -116,11 +116,10 @@ namespace ProgressiveScroll
 	{
 		public BookmarkFormatDefinition()
 		{
-			this.BackgroundColor = Colors.Black;
-			this.BackgroundCustomizable = false;
-			this.ForegroundColor = Colors.Blue;
-			this.DisplayName = "Progressive Scroll Bookmarks";
-			this.ZOrder = 5;
+			DisplayName = "Progressive Scroll Bookmarks";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Colors.Blue;
 		}
 	}
 
@@ -171,8 +170,8 @@ namespace ProgressiveScroll
 			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSUnsavedChangesFormatDefinition");
 			UnsavedChangedBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSHighlightWordFormatDefinition");
-			HighlightBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			textReferenceDict = formatMap.GetProperties("ClassificationFormatDefinition/PSHighlightWordFormatDefinition");
+			HighlightBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.BackgroundBrushId];
 
 			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSBreakpointFormatDefinition");
 			BreakpointBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];

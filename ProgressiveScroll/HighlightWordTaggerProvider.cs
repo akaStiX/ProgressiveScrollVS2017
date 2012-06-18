@@ -12,6 +12,7 @@ using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Text.Classification;
 
 namespace ProgressiveScroll
 {
@@ -19,7 +20,7 @@ namespace ProgressiveScroll
 	[Export(typeof(IViewTaggerProvider))]
 	[ContentType("code")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]
-	[TagType(typeof(TextMarkerTag))]
+	[TagType(typeof(ClassificationTag))]
 	internal class HighlightWordTaggerProvider : IViewTaggerProvider, IVsTextViewCreationListener
 	{
 		[Import]
@@ -27,6 +28,9 @@ namespace ProgressiveScroll
 
 		[Import]
 		internal ITextStructureNavigatorSelectorService TextStructureNavigatorSelector { get; set; }
+
+		[Import]
+		public IClassificationTypeRegistryService Registry { get; set; }
 
 		[Import(typeof(IVsEditorAdaptersFactoryService))]
 		internal IVsEditorAdaptersFactoryService _editorFactory = null;
@@ -43,7 +47,9 @@ namespace ProgressiveScroll
 			ITextStructureNavigator textStructureNavigator =
 				TextStructureNavigatorSelector.GetTextStructureNavigator(buffer);
 
-			HighlightWordTagger tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator);
+			IClassificationType classificationType = Registry.GetClassificationType("PSHighlightWordFormatDefinition");
+
+			HighlightWordTagger tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator, classificationType);
 			Taggers[textView] = tagger;
 			return tagger as ITagger<T>;
 		}
