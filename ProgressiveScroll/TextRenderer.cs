@@ -104,6 +104,7 @@ namespace ProgressiveScroll
 			int tabSize = 4;
 
 			CommentType commentType = CommentType.None;
+			int multiLineCommentStart = -1;
 
 			bool inKeyword = false;
 			bool inString = false;
@@ -181,69 +182,71 @@ namespace ProgressiveScroll
 					switch (commentType)
 					{
 						case CommentType.None:
+						{
+							if (!inString && (text.Substring(i, 2) == "//"))
 							{
-								if (!inString && (text.Substring(i, 2) == "//"))
+								commentType = CommentType.SingleLine;
+								inKeyword = false;
+							}
+							else
+							if (!inString && (text.Substring(i, 2) == "/*"))
+							{
+								commentType = CommentType.MultiLine;
+								multiLineCommentStart = i;
+								inKeyword = false;
+							}
+							else
+							if (text[i] == '"')
+							{
+								inKeyword = false;
+								if (inString)
 								{
-									commentType = CommentType.SingleLine;
-									inKeyword = false;
+									int backslashStart = i - 1;
+									while (i >= 0 && text[i] == '\\')
+									{
+										--backslashStart;
+									}
+
+									int numBackslashes = i - backslashStart - 1;
+
+									if (numBackslashes % 2 == 0)
+									{
+										inString = false;
+									}
 								}
 								else
-									if (!inString && (text.Substring(i, 2) == "/*"))
-									{
-										commentType = CommentType.MultiLine;
-										inKeyword = false;
-									}
-									else
-										if (text[i] == '"')
-										{
-											inKeyword = false;
-											if (inString)
-											{
-												int backslashStart = i - 1;
-												while (i >= 0 && text[i] == '\\')
-												{
-													--backslashStart;
-												}
-
-												int numBackslashes = i - backslashStart - 1;
-
-												if (numBackslashes % 2 == 0)
-												{
-													inString = false;
-												}
-											}
-											else
-											{
-												inString = true;
-											}
-										}
-										else
-											if (!inKeyword && !inString && IsCppIdStart(text[i]) && ((i == 0) || IsCppIdSeparator(text[i - 1])))
-											{
-												int keywordEnd = i + 1;
-												while (keywordEnd < text.Length && !IsCppIdSeparator(text[keywordEnd]))
-												{
-													++keywordEnd;
-												}
-												int len = keywordEnd - i;
-												inKeyword = IsKeyword(text.Substring(i, len));
-											}
-											else
-												if (inKeyword && IsCppIdSeparator(text[i]))
-												{
-													inKeyword = false;
-												}
-							}
-							break;
-
-						case CommentType.MultiLine:
-							{
-								if ((text[i - 1] == '*') && (text[0] == '/'))
 								{
-									commentType = CommentType.None;
+									inString = true;
 								}
 							}
-							break;
+							else
+							if (!inKeyword && !inString && IsCppIdStart(text[i]) && ((i == 0) || IsCppIdSeparator(text[i - 1])))
+							{
+								int keywordEnd = i + 1;
+								while (keywordEnd < text.Length && !IsCppIdSeparator(text[keywordEnd]))
+								{
+									++keywordEnd;
+								}
+								int len = keywordEnd - i;
+								inKeyword = IsKeyword(text.Substring(i, len));
+							}
+							else
+							if (inKeyword && IsCppIdSeparator(text[i]))
+							{
+								inKeyword = false;
+							}
+						}
+						break;
+
+						case CommentType.MultiLine:
+						{
+							if (text.Substring(i - 1, 2) == "*/" &&
+								i > multiLineCommentStart + 2) // Make sure we don't detect "/*/" as opening and closing a comment.
+							{
+								commentType = CommentType.None;
+							}
+						}
+						break;
 					}
 
 					while (highlightIndex < highlights.Count && i >= highlights[highlightIndex].End.Position)
