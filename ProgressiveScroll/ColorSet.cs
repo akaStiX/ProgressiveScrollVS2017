@@ -19,8 +19,8 @@ namespace ProgressiveScroll
 		public TextFormatDefinition()
 		{
 			DisplayName = "Progressive Scroll Text";
-			BackgroundColor = Colors.Black;
-			ForegroundColor = Colors.White;
+			BackgroundColor = Color.FromRgb(238, 238, 238);
+			ForegroundColor = Colors.Gray;
 		}
 	}
 
@@ -34,7 +34,7 @@ namespace ProgressiveScroll
 			DisplayName = "Progressive Scroll Comments";
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
-			ForegroundColor = Color.FromRgb(255, 128, 255);
+			ForegroundColor = Colors.Green;
 		}
 	}
 
@@ -48,7 +48,7 @@ namespace ProgressiveScroll
 			DisplayName = "Progressive Scroll Strings";
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
-			ForegroundColor = Colors.White;
+			ForegroundColor = Color.FromRgb(190, 80, 80);
 		}
 	}
 
