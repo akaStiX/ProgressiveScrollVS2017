@@ -66,11 +66,5 @@ namespace ProgressiveScroll
 		public ProgressiveScrollOptions()
 		{
 		}
-
-		/*public GeneralOptionPage GetOptions()
-		{
-			return (GeneralOptionPage)GetDialogPage(typeof(GeneralOptionPage));
-		}*/
-
 	}
 }

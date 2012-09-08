@@ -73,12 +73,12 @@ namespace ProgressiveScroll
 		{
 			if (markers.Count > 0)
 			{
-				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].Start)) - 2;
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].Start)) - 3;
 				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].End)) + 2;
 
 				for (int i = 1; i < markers.Count; ++i)
 				{
-					double y = _scrollBar.GetYCoordinateOfBufferPosition(markers[i].Start) - 2;
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(markers[i].Start) - 3;
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
@@ -95,7 +95,7 @@ namespace ProgressiveScroll
 				drawingContext.DrawRectangle(
 					brush,
 					null,
-					new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
+					new Rect(_scrollBar.Width - 5, yTop, 5, yBottom - yTop));
 			}
 		}
 	}

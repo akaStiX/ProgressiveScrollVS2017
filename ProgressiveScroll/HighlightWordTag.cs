@@ -43,7 +43,16 @@ namespace ProgressiveScroll
 		SnapshotPoint RequestedPoint { get; set; }
 		object updateLock = new object();
 
-		public WordSelectionCommandFilter CommandFilter { get; set; }
+		private WordSelectionCommandFilter commandFilter { get; set; }
+		public WordSelectionCommandFilter CommandFilter
+		{
+			get { return commandFilter; }
+			set
+			{
+				commandFilter = value;
+				commandFilter.CommandChanged += SelectionChanged;
+			}
+		}
 
 		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
@@ -66,10 +75,17 @@ namespace ProgressiveScroll
 
 		void SelectionChanged(object sender, EventArgs e)
 		{
-			if (CommandFilter != null &&
-				CommandFilter.Selected)
+			if (CommandFilter != null)
 			{
-				UpdateSelection(View.Caret.Position);
+				if (CommandFilter.Selected)
+				{
+					UpdateSelection(View.Caret.Position);
+				}
+				else
+				if (CommandFilter.Unselected)
+				{
+					SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), null);
+				}
 			}
 		}
 
@@ -209,13 +225,18 @@ namespace ProgressiveScroll
 		internal IOleCommandTarget _nextTarget;
 		internal bool _added;
 		internal bool _selected;
+		internal bool _unselected;
+
+		public event EventHandler CommandChanged;
 
 		public bool Selected { get { return _selected; } }
+		public bool Unselected { get { return _unselected; } }
 
 		public WordSelectionCommandFilter(IWpfTextView textView)
 		{
 			_textView = textView;
 			_selected = false;
+			_unselected = false;
 		}
 
 		int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
@@ -233,6 +254,7 @@ namespace ProgressiveScroll
 				if (prgCmds[0].cmdID == (uint)VSConstants.VSStd2KCmdID.ECMD_LEFTCLICK)
 				{
 					_selected = false;
+					_unselected = false;
 				}
 			}
 
@@ -252,11 +274,15 @@ namespace ProgressiveScroll
 			{
 				if (nCmdID == (uint)VSConstants.VSStd2KCmdID.DOUBLECLICK)
 				{
+					_unselected = false;
 					_selected = true;
 				}
-				else if (nCmdID == (uint)VSConstants.VSStd2KCmdID.CANCEL)
+				else
+				if (nCmdID == (uint)VSConstants.VSStd2KCmdID.CANCEL)
 				{
+					_unselected = true;
 					_selected = false;
+					CommandChanged(this, EventArgs.Empty);
 				}
 			}
 
