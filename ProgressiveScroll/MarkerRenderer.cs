@@ -19,11 +19,20 @@ namespace ProgressiveScroll
 
 		public ColorSet Colors { get; set; }
 
-		private static readonly int _breakpointType = 73;
-		private static readonly int _bookmarkType = 3;
+		private static readonly int markerWidth = 5;
+		private static readonly int markerStartOffset = -3;
+		private static readonly int markerEndOffset = 2;
+
+		private static int _breakpointType = 73;
+		private static int _bookmarkType = 3;
 
 		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, SimpleScrollBar scrollBar)
 		{
+			if (ProgressiveScrollFactory.IsVS11)
+			{
+				_breakpointType = 70;
+			}
+
 			_textView = textView;
 			_markerTagAggregator = markerTagAggregator;
 			_scrollBar = scrollBar;
@@ -73,29 +82,29 @@ namespace ProgressiveScroll
 		{
 			if (markers.Count > 0)
 			{
-				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].Start)) - 3;
-				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].End)) + 2;
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].Start)) + markerStartOffset;
+				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(markers[0].End)) + markerEndOffset;
 
 				for (int i = 1; i < markers.Count; ++i)
 				{
-					double y = _scrollBar.GetYCoordinateOfBufferPosition(markers[i].Start) - 3;
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(markers[i].Start) + markerStartOffset;
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
 							brush,
 							null,
-							new Rect(_scrollBar.Width - 3, yTop, 3, yBottom - yTop));
+							new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 
 						yTop = y;
 					}
 
-					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(markers[i].End)) + 2;
+					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(markers[i].End)) + markerEndOffset;
 				}
 
 				drawingContext.DrawRectangle(
 					brush,
 					null,
-					new Rect(_scrollBar.Width - 5, yTop, 5, yBottom - yTop));
+					new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 			}
 		}
 	}

@@ -84,7 +84,7 @@ namespace ProgressiveScroll
 	[ClassificationType(ClassificationTypeNames = "PSHighlightWordFormatDefinition")]
 	[Name("ClassificationFormatDefinition/PSHighlightWordFormatDefinition")]
 	[UserVisible(true)]
-	[Order(Before = Priority.Low)]
+	[Order(After = Priority.High)]
 	public sealed class RegionForeground : ClassificationFormatDefinition
 	{
 		public RegionForeground()

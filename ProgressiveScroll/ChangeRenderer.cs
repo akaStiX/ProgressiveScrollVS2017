@@ -19,6 +19,11 @@ namespace ProgressiveScroll
 
 		public ColorSet Colors { get; set; }
 
+		private static readonly int markerWidth = 3;
+		private static readonly int markerStartOffset = -2;
+		private static readonly int markerEndOffset = 2;
+
+
 		public ChangeRenderer(ITextView textView, ITagAggregator<ChangeTag> changeTagAggregator, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
@@ -64,29 +69,29 @@ namespace ProgressiveScroll
 		{
 			if (changes.Count > 0)
 			{
-				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].Start)) - 2;
-				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].End)) + 2;
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].Start)) + markerStartOffset;
+				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[0].End)) + markerEndOffset;
 
 				for (int i = 1; i < changes.Count; ++i)
 				{
-					double y = _scrollBar.GetYCoordinateOfBufferPosition(changes[i].Start) - 2;
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(changes[i].Start) + markerStartOffset;
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
 							brush,
 							null,
-							new Rect(0, yTop, 3, yBottom - yTop));
+							new Rect(0, yTop, markerWidth, yBottom - yTop));
 
 						yTop = y;
 					}
 
-					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[i].End)) + 2;
+					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(changes[i].End)) + markerEndOffset;
 				}
 
 				drawingContext.DrawRectangle(
 					brush,
 					null,
-					new Rect(0, yTop, 3, yBottom - yTop));
+					new Rect(0, yTop, markerWidth, yBottom - yTop));
 			}
 		}
 	}

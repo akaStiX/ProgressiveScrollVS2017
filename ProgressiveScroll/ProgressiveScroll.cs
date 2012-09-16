@@ -35,7 +35,7 @@ namespace ProgressiveScroll
 		private ProgressiveScrollView _progressiveScrollView;
 
 		private readonly int _splitterHeight = 17;
-		private readonly int _horizontalScrollBarHeight = 17;
+		private int _horizontalScrollBarHeight = 17;
 
 		private static Dictionary<ProgressiveScroll, byte> _progressiveScrollDict = new Dictionary<ProgressiveScroll, byte>();
 
@@ -51,6 +51,11 @@ namespace ProgressiveScroll
 			if (textViewHost == null)
 			{
 				throw new ArgumentNullException("textViewHost");
+			}
+
+			if (ProgressiveScrollFactory.IsVS11)
+			{
+				_horizontalScrollBarHeight = 0;
 			}
 
 			_progressiveScrollDict.Add(this, 0);

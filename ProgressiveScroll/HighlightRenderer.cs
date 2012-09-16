@@ -17,6 +17,11 @@ namespace ProgressiveScroll
 
 		public ColorSet Colors { get; set; }
 
+		private static readonly int markerWidth = 5;
+		private static readonly int markerStartOffset = -3;
+		private static readonly int markerEndOffset = 2;
+
+
 		public HighlightRenderer(ITextView textView, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
@@ -42,29 +47,29 @@ namespace ProgressiveScroll
 
 			if (highlights.Count > 0)
 			{
-				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].Start)) - 3;
-				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].End)) + 2;
+				double yTop = Math.Floor(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].Start)) + markerStartOffset;
+				double yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[0].End)) + markerEndOffset;
 
 				for (int i = 1; i < highlights.Count; ++i)
 				{
-					double y = _scrollBar.GetYCoordinateOfBufferPosition(highlights[i].Start) - 3;
+					double y = _scrollBar.GetYCoordinateOfBufferPosition(highlights[i].Start) + markerStartOffset;
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
 							Colors.HighlightBrush,
 							null,
-							new Rect(_scrollBar.Width - 5, yTop, 5, yBottom - yTop));
+							new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 
 						yTop = y;
 					}
 
-					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[i].End)) + 2;
+					yBottom = Math.Ceiling(_scrollBar.GetYCoordinateOfBufferPosition(highlights[i].End)) + markerEndOffset;
 				}
 
 				drawingContext.DrawRectangle(
 					Colors.HighlightBrush,
 					null,
-					new Rect(_scrollBar.Width - 5, yTop, 5, yBottom - yTop));
+					new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 			}
 		}
 

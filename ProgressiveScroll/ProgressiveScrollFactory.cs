@@ -10,8 +10,8 @@
 	using Microsoft.VisualStudio.Text.Document;
 	using Microsoft.VisualStudio.Text.Classification;
 	using Microsoft.VisualStudio.Editor;
-using EnvDTE;
-using Microsoft.VisualStudio.Shell;
+	using EnvDTE;
+	using Microsoft.VisualStudio.Shell;
 
 	/// <summary>
 	/// Export a <see cref="IWpfTextViewMarginProvider"/>, which returns an instance of the margin for the editor
@@ -48,10 +48,13 @@ using Microsoft.VisualStudio.Shell;
 			ServiceProvider = serviceProvider;
 		}
 
+		public static bool IsVS11 { get; set; }
+
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
 		{
 			// Get the width from the options
 			DTE env = (DTE)ServiceProvider.GetService(typeof(DTE));
+			IsVS11 = (env.Version == "11.0");
 			EnvDTE.Properties props =
 				env.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
 

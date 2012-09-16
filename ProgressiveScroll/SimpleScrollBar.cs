@@ -23,8 +23,6 @@ namespace ProgressiveScroll
 		private IWpfTextViewMargin _realScrollBarMargin;
 		private IVerticalScrollBar _realScrollBar;
 
-		private double _extraHeight = 34.0;
-
 		double _trackSpanTop;
 		double _trackSpanBottom;
 		double _scale = 1.0;
@@ -119,7 +117,12 @@ namespace ProgressiveScroll
 
 		private void ResetTrackSpan()
 		{
-			_scale = (_realScrollBarMargin.VisualElement.ActualHeight + _extraHeight) / _textView.VisualSnapshot.LineCount;
+			double h = 34.0;
+			if (ProgressiveScrollFactory.IsVS11)
+			{
+				h = 17.0;
+			}
+			_scale = (_realScrollBarMargin.VisualElement.ActualHeight + h) / _textView.VisualSnapshot.LineCount;
 			_scale = Math.Min(_scale, 1.0);
 
 			_trackSpanTop = 0;
