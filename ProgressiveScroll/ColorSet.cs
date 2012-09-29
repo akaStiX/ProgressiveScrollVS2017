@@ -25,6 +25,19 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
+	[Name("MarkerFormatDefinition/PSCursorFormatDefinition")]
+	[UserVisible(true)]
+	internal class CursorFormatDefinition : MarkerFormatDefinition
+	{
+		public CursorFormatDefinition()
+		{
+			DisplayName = "Progressive Scroll Visible Region";
+			BackgroundColor = Colors.Gray;
+			ForegroundColor = Colors.Black;
+		}
+	}
+
+	[Export(typeof(EditorFormatDefinition))]
 	[Name("MarkerFormatDefinition/PSCommentFormatDefinition")]
 	[UserVisible(true)]
 	internal class CommentFormatDefinition : MarkerFormatDefinition
@@ -133,6 +146,7 @@ namespace ProgressiveScroll
 		public SolidColorBrush CommentBrush { get; private set; }
 		public SolidColorBrush StringBrush { get; private set; }
 		public SolidColorBrush VisibleBrush { get; private set; }
+		public Pen VisibleBorderPen { get; private set; }
 		public SolidColorBrush ChangedBrush { get; private set; }
 		public SolidColorBrush UnsavedChangedBrush { get; private set; }
 		public SolidColorBrush HighlightBrush { get; private set; }
@@ -153,31 +167,35 @@ namespace ProgressiveScroll
 		{
 			IEditorFormatMap formatMap = _formatMapService.GetEditorFormatMap(_textView);
 
-			ResourceDictionary textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSTextFormatDefinition");
-			WhitespaceBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.BackgroundBrushId];
-			TextBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
-			VisibleBrush = new SolidColorBrush(Color.FromArgb((byte)(CursorOpacity * 255), TextBrush.Color.R, TextBrush.Color.G, TextBrush.Color.B));
+			ResourceDictionary resDict = formatMap.GetProperties("MarkerFormatDefinition/PSTextFormatDefinition");
+			WhitespaceBrush = (SolidColorBrush)resDict[EditorFormatDefinition.BackgroundBrushId];
+			TextBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSCommentFormatDefinition");
-			CommentBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSCursorFormatDefinition");
+			Color c = (Color)resDict[EditorFormatDefinition.BackgroundColorId];
+			VisibleBrush = new SolidColorBrush(Color.FromArgb((byte)(CursorOpacity * 255), c.R, c.G, c.B));
+			VisibleBorderPen = new Pen((SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId], 1.0);
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSStringFormatDefinition");
-			StringBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSCommentFormatDefinition");
+			CommentBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSChangesFormatDefinition");
-			ChangedBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSStringFormatDefinition");
+			StringBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSUnsavedChangesFormatDefinition");
-			UnsavedChangedBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSChangesFormatDefinition");
+			ChangedBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("ClassificationFormatDefinition/PSHighlightWordFormatDefinition");
-			HighlightBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.BackgroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSUnsavedChangesFormatDefinition");
+			UnsavedChangedBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSBreakpointFormatDefinition");
-			BreakpointBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("ClassificationFormatDefinition/PSHighlightWordFormatDefinition");
+			HighlightBrush = (SolidColorBrush)resDict[EditorFormatDefinition.BackgroundBrushId];
 
-			textReferenceDict = formatMap.GetProperties("MarkerFormatDefinition/PSBookmarkFormatDefinition");
-			BookmarkBrush = (SolidColorBrush)textReferenceDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSBreakpointFormatDefinition");
+			BreakpointBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSBookmarkFormatDefinition");
+			BookmarkBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 		}
 
 	}

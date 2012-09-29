@@ -31,6 +31,8 @@ namespace ProgressiveScroll
 		private MarkerRenderer _markerRenderer;
 
 		public bool TextDirty { get; set; }
+		public bool CursorBorderEnabled { get; set; }
+		public bool RenderTextEnabled { get; set; }
 
 		private ColorSet _colorSet;
 
@@ -90,8 +92,11 @@ namespace ProgressiveScroll
 				}
 
 				// Render the text bitmap with scaling
-				Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, Math.Min(_textRenderer.Height, _progressiveScroll.DrawHeight));
-				drawingContext.DrawImage(_textRenderer.Bitmap, rect);
+				if (RenderTextEnabled)
+				{
+					Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, Math.Min(_textRenderer.Height, _progressiveScroll.DrawHeight));
+					drawingContext.DrawImage(_textRenderer.Bitmap, rect);
+				}
 
 				// Render viewport
 				int numEditorLines = Math.Max((int)(_textView.ViewportHeight / _textView.LineHeight), 5);
@@ -108,6 +113,11 @@ namespace ProgressiveScroll
 
 				_markerRenderer.Colors = _colorSet;
 				_markerRenderer.Render(drawingContext);
+
+				if (CursorBorderEnabled)
+				{
+					drawingContext.DrawRectangle(null, _colorSet.VisibleBorderPen, new Rect(0.5, firstLine + 0.5, _progressiveScroll.ActualWidth - 1.0, numEditorLines - 1.0));
+				}
 			}
 		}
 	}

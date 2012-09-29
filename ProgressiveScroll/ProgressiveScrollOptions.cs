@@ -18,7 +18,9 @@ namespace ProgressiveScroll
 		public const string PageName = "General";
 
 		public const string ScrollBarWidth = "ScrollBarWidth";
+		public const string RenderTextEnabled = "RenderTextEnabled";
 		public const string CursorOpacity = "CursorOpacity";
+		public const string CursorBorderEnabled = "CursorBorderEnabled";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -27,7 +29,9 @@ namespace ProgressiveScroll
 	public class GeneralOptionPage : DialogPage
 	{
 		private int _scrollBarWidth = 128;
+		private bool _renderTextEnabled = true;
 		private double _cursorOpacity = 0.125;
+		private bool _cursorBorderEnabled = false;
 
 		[Category("General")]
 		[DisplayName("Width")]
@@ -39,12 +43,30 @@ namespace ProgressiveScroll
 		}
 
 		[Category("General")]
-		[DisplayName("Cursor opacity")]
+		[DisplayName("Display Code")]
+		[Description("Displays the code in the scrollbar.")]
+		public bool RenderTextEnabled
+		{
+			get { return _renderTextEnabled; }
+			set { _renderTextEnabled = value; }
+		}
+
+		[Category("General")]
+		[DisplayName("Visible Region Opacity")]
 		[Description("Opacity of the visible region.")]
 		public double CursorOpacity
 		{
 			get { return _cursorOpacity; }
 			set { _cursorOpacity = Math.Min(Math.Max(value, 0.0), 1.0); }
+		}
+
+		[Category("General")]
+		[DisplayName("Display border")]
+		[Description("Displays a border around the visible region.")]
+		public bool CursorBorderEnabled
+		{
+			get { return _cursorBorderEnabled; }
+			set { _cursorBorderEnabled = value; }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)

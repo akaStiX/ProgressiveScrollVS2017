@@ -25,6 +25,7 @@ namespace ProgressiveScroll
 		}
 		public const string MarginName = "ProgressiveScroll";
 		public ColorSet Colors { get; set; }
+		public ProgressiveScrollView ScrollView { get { return _progressiveScrollView; } }
 
 		private bool _isDisposed = false;
 
@@ -96,6 +97,10 @@ namespace ProgressiveScroll
 			_scrollBar.Width = newWidth;
 			Width = newWidth;
 
+			;
+			;
+			_progressiveScrollView.CursorBorderEnabled = options.CursorBorderEnabled;
+			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
 			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
