@@ -23,9 +23,16 @@ namespace ProgressiveScroll
 		{
 			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
 		}
+		public bool SplitterEnabled
+		{
+			get { return _splitterHeight == 0; }
+			set { _splitterHeight = value ? 0 : 17; }
+		}
 		public const string MarginName = "ProgressiveScroll";
 		public ColorSet Colors { get; set; }
 		public ProgressiveScrollView ScrollView { get { return _progressiveScrollView; } }
+
+
 
 		private bool _isDisposed = false;
 
@@ -35,7 +42,7 @@ namespace ProgressiveScroll
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
 		private ProgressiveScrollView _progressiveScrollView;
 
-		private readonly int _splitterHeight = 17;
+		private int _splitterHeight = 17;
 		private int _horizontalScrollBarHeight = 17;
 
 		private static Dictionary<ProgressiveScroll, byte> _progressiveScrollDict = new Dictionary<ProgressiveScroll, byte>();
@@ -96,9 +103,9 @@ namespace ProgressiveScroll
 			int newWidth = options.ScrollBarWidth;
 			_scrollBar.Width = newWidth;
 			Width = newWidth;
+			SplitterEnabled = options.SplitterEnabled;
+			_scrollBar.SplitterEnabled = options.SplitterEnabled;
 
-			;
-			;
 			_progressiveScrollView.CursorBorderEnabled = options.CursorBorderEnabled;
 			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
 			_progressiveScrollView.TextDirty = true;

@@ -60,22 +60,6 @@ namespace ProgressiveScroll
 		{
 		}
 
-		private double GetYCoordinateOfLineBottom(ITextViewLine line)
-		{
-			ITextSnapshot snapshot = _textView.TextSnapshot;
-			if (line.EndIncludingLineBreak.Position < snapshot.Length)
-			{
-				// line is not the last line; get the Y coordinate of the next line.
-				return _scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(snapshot, line.EndIncludingLineBreak.Position + 1));
-			}
-			else
-			{
-				// last line.
-				double empty = 1 - ((_textView.TextViewLines.LastVisibleLine.Bottom - _textView.TextViewLines.FirstVisibleLine.Bottom) / _textView.ViewportHeight);
-				return _scrollBar.GetYCoordinateOfScrollMapPosition(_scrollBar.Map.End + _scrollBar.Map.ThumbSize * empty);
-			}
-		}
-
 		public void Render(DrawingContext drawingContext)
 		{
 			if (!this._textView.IsClosed)

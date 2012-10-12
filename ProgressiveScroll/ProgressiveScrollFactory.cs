@@ -83,6 +83,8 @@
 			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService, cursorOpacity);
 			progressiveScroll.ScrollView.RenderTextEnabled = (bool)props.Item(OptionNames.RenderTextEnabled).Value;
 			progressiveScroll.ScrollView.CursorBorderEnabled = (bool)props.Item(OptionNames.CursorBorderEnabled).Value;
+			progressiveScroll.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
+			scrollBar.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
 
 			return progressiveScroll;
 		}

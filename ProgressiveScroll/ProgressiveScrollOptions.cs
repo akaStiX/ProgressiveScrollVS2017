@@ -21,6 +21,7 @@ namespace ProgressiveScroll
 		public const string RenderTextEnabled = "RenderTextEnabled";
 		public const string CursorOpacity = "CursorOpacity";
 		public const string CursorBorderEnabled = "CursorBorderEnabled";
+		public const string SplitterEnabled = "SplitterEnabled";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -32,6 +33,7 @@ namespace ProgressiveScroll
 		private bool _renderTextEnabled = true;
 		private double _cursorOpacity = 0.125;
 		private bool _cursorBorderEnabled = false;
+		private bool _splitterEnabled = false;
 
 		[Category("General")]
 		[DisplayName("Width")]
@@ -67,6 +69,15 @@ namespace ProgressiveScroll
 		{
 			get { return _cursorBorderEnabled; }
 			set { _cursorBorderEnabled = value; }
+		}
+
+		[Category("General")]
+		[DisplayName("Display splitter")]
+		[Description("Displays the splitter control.")]
+		public bool SplitterEnabled
+		{
+			get { return _splitterEnabled; }
+			set { _splitterEnabled = value; }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)

@@ -28,6 +28,7 @@ namespace ProgressiveScroll
 		double _scale = 1.0;
 
 		public int Width { get; set; }
+		public bool SplitterEnabled { get; set; }
 
 		private class ScrollMapWrapper : IScrollMap
 		{
@@ -117,10 +118,10 @@ namespace ProgressiveScroll
 
 		private void ResetTrackSpan()
 		{
-			double h = 34.0;
-			if (ProgressiveScrollFactory.IsVS11)
+			double h = SplitterEnabled ? 0 : 17;
+			if (!ProgressiveScrollFactory.IsVS11)
 			{
-				h = 17.0;
+				h += 17.0;
 			}
 			_scale = (_realScrollBarMargin.VisualElement.ActualHeight + h) / _textView.VisualSnapshot.LineCount;
 			_scale = Math.Min(_scale, 1.0);
@@ -242,7 +243,7 @@ namespace ProgressiveScroll
 		{
 			get
 			{
-				return _textView.ViewportHeight / _textView.LineHeight;
+				return _scale * (_textView.ViewportHeight / _textView.LineHeight);
 			}
 		}
 
