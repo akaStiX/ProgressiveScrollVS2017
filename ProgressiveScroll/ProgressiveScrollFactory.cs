@@ -79,6 +79,7 @@
 				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textViewHost.TextView),
+				_tagAggregatorFactoryService.CreateTagAggregator<IErrorTag>(textViewHost.TextView),
 				debugger,
 				scrollBar,
 				this);
@@ -88,6 +89,7 @@
 			progressiveScroll.ScrollView.CursorBorderEnabled = (bool)props.Item(OptionNames.CursorBorderEnabled).Value;
 			progressiveScroll.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
 			scrollBar.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
+			progressiveScroll.ScrollView.MarkerRenderer.ErrorsEnabled = (bool)props.Item(OptionNames.ErrorsEnabled).Value;
 
 			return progressiveScroll;
 		}

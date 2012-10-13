@@ -136,6 +136,20 @@ namespace ProgressiveScroll
 		}
 	}
 
+	[Export(typeof(EditorFormatDefinition))]
+	[Name("MarkerFormatDefinition/PSErrorFormatDefinition")]
+	[UserVisible(true)]
+	internal class ErrorFormatDefinition : MarkerFormatDefinition
+	{
+		public ErrorFormatDefinition()
+		{
+			DisplayName = "Progressive Scroll Errors";
+			BackgroundColor = Colors.Black;
+			BackgroundCustomizable = false;
+			ForegroundColor = Colors.Maroon;
+		}
+	}
+
 	class ColorSet
 	{
 		private ITextView _textView;
@@ -152,6 +166,7 @@ namespace ProgressiveScroll
 		public SolidColorBrush HighlightBrush { get; private set; }
 		public SolidColorBrush BreakpointBrush { get; private set; }
 		public SolidColorBrush BookmarkBrush { get; private set; }
+		public SolidColorBrush ErrorBrush { get; private set; }
 
 		public double CursorOpacity { get; set; }
 
@@ -196,7 +211,9 @@ namespace ProgressiveScroll
 
 			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSBookmarkFormatDefinition");
 			BookmarkBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
-		}
 
+			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSErrorFormatDefinition");
+			ErrorBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+		}
 	}
 }

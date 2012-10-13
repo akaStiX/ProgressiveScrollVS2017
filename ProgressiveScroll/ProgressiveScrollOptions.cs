@@ -22,6 +22,7 @@ namespace ProgressiveScroll
 		public const string CursorOpacity = "CursorOpacity";
 		public const string CursorBorderEnabled = "CursorBorderEnabled";
 		public const string SplitterEnabled = "SplitterEnabled";
+		public const string ErrorsEnabled = "ErrorsEnabled";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -34,6 +35,7 @@ namespace ProgressiveScroll
 		private double _cursorOpacity = 0.125;
 		private bool _cursorBorderEnabled = false;
 		private bool _splitterEnabled = false;
+		private bool _errorsEnabled = false;
 
 		[Category("General")]
 		[DisplayName("Width")]
@@ -78,6 +80,15 @@ namespace ProgressiveScroll
 		{
 			get { return _splitterEnabled; }
 			set { _splitterEnabled = value; }
+		}
+
+		[Category("General")]
+		[DisplayName("Display Error Marks")]
+		[Description("Displays marks for errors in the scrollbar.")]
+		public bool ErrorsEnabled
+		{
+			get { return _errorsEnabled; }
+			set { _errorsEnabled = value; }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)

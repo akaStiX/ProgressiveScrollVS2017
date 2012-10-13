@@ -40,6 +40,7 @@ namespace ProgressiveScroll
 		private IWpfTextView _textView;
 		private SimpleScrollBar _scrollBar;
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
+		private ITagAggregator<IErrorTag> _errorTagAggregator;
 		private ProgressiveScrollView _progressiveScrollView;
 
 		private int _splitterHeight = 17;
@@ -53,6 +54,7 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
+			ITagAggregator<IErrorTag> errorTagAggregator,
 			EnvDTE.Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ProgressiveScrollFactory factory)
@@ -73,6 +75,7 @@ namespace ProgressiveScroll
 			_textView = textViewHost.TextView;
 			_scrollBar = scrollBar;
 			_markerTagAggregator = markerTagAggregator;
+			_errorTagAggregator = errorTagAggregator;
 
 			Background = Brushes.Transparent;
 
@@ -83,6 +86,7 @@ namespace ProgressiveScroll
 				outliningManager,
 				changeTagAggregator,
 				markerTagAggregator,
+				errorTagAggregator,
 				debugger,
 				scrollBar,
 				this);
@@ -110,6 +114,7 @@ namespace ProgressiveScroll
 
 			_progressiveScrollView.CursorBorderEnabled = options.CursorBorderEnabled;
 			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
+			_progressiveScrollView.MarkerRenderer.ErrorsEnabled = options.ErrorsEnabled;
 			_progressiveScrollView.TextDirty = true;
 			this.InvalidateVisual();
 		}
@@ -168,6 +173,7 @@ namespace ProgressiveScroll
 			_textView.LayoutChanged += OnTextChanged;
 			_scrollBar.TrackSpanChanged += OnViewChanged;
 			_markerTagAggregator.TagsChanged += OnTagsChanged;
+			_errorTagAggregator.TagsChanged += OnTagsChanged;
 			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
 
 			this.MouseLeftButtonDown += OnMouseLeftButtonDown;
@@ -180,6 +186,7 @@ namespace ProgressiveScroll
 			_textView.LayoutChanged -= OnTextChanged;
 			_scrollBar.TrackSpanChanged -= OnViewChanged;
 			_markerTagAggregator.TagsChanged -= OnTagsChanged;
+			_errorTagAggregator.TagsChanged -= OnTagsChanged;
 			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTextChanged;
 
 			this.MouseLeftButtonDown -= OnMouseLeftButtonDown;

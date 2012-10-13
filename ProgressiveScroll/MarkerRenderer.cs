@@ -16,22 +16,24 @@ namespace ProgressiveScroll
 	{
 		private ITextView _textView;
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
+		private ITagAggregator<IErrorTag> _errorTagAggregator;
 		private EnvDTE.Debugger _debugger;
 		private SimpleScrollBar _scrollBar;
 		private string _filename;
 
 		public ColorSet Colors { get; set; }
+		public bool ErrorsEnabled { get; set; }
 
-		private static readonly int markerWidth = 5;
 		private static readonly int markerStartOffset = -3;
 		private static readonly int markerEndOffset = 2;
 
 		private static int _bookmarkType = 3;
 
-		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, EnvDTE.Debugger debugger, SimpleScrollBar scrollBar)
+		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, ITagAggregator<IErrorTag> errorTagAggregator, EnvDTE.Debugger debugger, SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_markerTagAggregator = markerTagAggregator;
+			_errorTagAggregator = errorTagAggregator;
 			_debugger = debugger;
 			_scrollBar = scrollBar;
 
@@ -50,14 +52,17 @@ namespace ProgressiveScroll
 
 		public void Render(DrawingContext drawingContext)
 		{
-			NormalizedSnapshotSpanCollection bookmarks = GetBookmarks(
-				_textView.TextSnapshot,
-				_markerTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
-
-			DrawMarkers(drawingContext, bookmarks, Colors.BookmarkBrush);
+			NormalizedSnapshotSpanCollection bookmarks = GetBookmarks();
+			DrawMarkers(drawingContext, bookmarks, Colors.BookmarkBrush, 5);
 
 			NormalizedSnapshotSpanCollection breakpoints = GetBreakpoints();
-			DrawMarkers(drawingContext, breakpoints, Colors.BreakpointBrush);
+			DrawMarkers(drawingContext, breakpoints, Colors.BreakpointBrush, 5);
+
+			if (ErrorsEnabled)
+			{
+				NormalizedSnapshotSpanCollection errors = GetErrors();
+				DrawMarkers(drawingContext, errors, Colors.ErrorBrush, 3);
+			}
 		}
 
 		internal NormalizedSnapshotSpanCollection GetBreakpoints()
@@ -76,22 +81,38 @@ namespace ProgressiveScroll
 			return new NormalizedSnapshotSpanCollection(unnormalizedBreakpoints);
 		}
 
-		internal static NormalizedSnapshotSpanCollection GetBookmarks(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<IVsVisibleTextMarkerTag>> tags)
+		internal NormalizedSnapshotSpanCollection GetBookmarks()
 		{
+			IEnumerable<IMappingTagSpan<IVsVisibleTextMarkerTag>> tags =
+				_markerTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length));
 			List<SnapshotSpan> unnormalizedBookmarks = new List<SnapshotSpan>();
 
 			foreach (IMappingTagSpan<IVsVisibleTextMarkerTag> tag in tags)
 			{
 				if (tag.Tag.Type == _bookmarkType)
 				{
-					unnormalizedBookmarks.AddRange(tag.Span.GetSpans(snapshot));
+					unnormalizedBookmarks.AddRange(tag.Span.GetSpans(_textView.TextSnapshot));
 				}
 			}
 
 			return new NormalizedSnapshotSpanCollection(unnormalizedBookmarks);
 		}
 
-		private void DrawMarkers(DrawingContext drawingContext, NormalizedSnapshotSpanCollection markers, Brush brush)
+		internal NormalizedSnapshotSpanCollection GetErrors()
+		{
+			IEnumerable<IMappingTagSpan<IErrorTag>> tags =
+				_errorTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length));
+			List<SnapshotSpan> unnormalizederrors = new List<SnapshotSpan>();
+
+			foreach (IMappingTagSpan<IErrorTag> tag in tags)
+			{
+				unnormalizederrors.AddRange(tag.Span.GetSpans(_textView.TextSnapshot));
+			}
+
+			return new NormalizedSnapshotSpanCollection(unnormalizederrors);
+		}
+
+		private void DrawMarkers(DrawingContext drawingContext, NormalizedSnapshotSpanCollection markers, Brush brush, double markerWidth)
 		{
 			if (markers.Count > 0)
 			{

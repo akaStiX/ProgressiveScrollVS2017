@@ -33,6 +33,7 @@ namespace ProgressiveScroll
 		public bool TextDirty { get; set; }
 		public bool CursorBorderEnabled { get; set; }
 		public bool RenderTextEnabled { get; set; }
+		public MarkerRenderer MarkerRenderer { get { return _markerRenderer; } }
 
 		private ColorSet _colorSet;
 
@@ -41,6 +42,7 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerAggregator,
+			ITagAggregator<IErrorTag> errorTagAggregator,
 			EnvDTE.Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ProgressiveScroll progressiveScroll)
@@ -52,7 +54,7 @@ namespace ProgressiveScroll
 			_textRenderer = new TextRenderer(textView, outliningManager, scrollBar);
 			_changeRenderer = new ChangeRenderer(textView, changeTagAggregator, scrollBar);
 			_highlightRenderer = new HighlightRenderer(textView, scrollBar);
-			_markerRenderer = new MarkerRenderer(textView, markerAggregator, debugger, scrollBar);
+			_markerRenderer = new MarkerRenderer(textView, markerAggregator, errorTagAggregator, debugger, scrollBar);
 
 			TextDirty = true;
 		}
