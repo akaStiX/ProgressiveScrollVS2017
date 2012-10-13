@@ -8,6 +8,7 @@ using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text;
 using System.Windows;
+using System.IO;
 
 namespace ProgressiveScroll
 {
@@ -15,7 +16,9 @@ namespace ProgressiveScroll
 	{
 		private ITextView _textView;
 		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
+		private EnvDTE.Debugger _debugger;
 		private SimpleScrollBar _scrollBar;
+		private string _filename;
 
 		public ColorSet Colors { get; set; }
 
@@ -23,59 +26,69 @@ namespace ProgressiveScroll
 		private static readonly int markerStartOffset = -3;
 		private static readonly int markerEndOffset = 2;
 
-		private static int _breakpointType = 73;
 		private static int _bookmarkType = 3;
 
-		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, SimpleScrollBar scrollBar)
+		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, EnvDTE.Debugger debugger, SimpleScrollBar scrollBar)
 		{
-			if (ProgressiveScrollFactory.IsVS11)
-			{
-				_breakpointType = 70;
-			}
-
 			_textView = textView;
 			_markerTagAggregator = markerTagAggregator;
+			_debugger = debugger;
 			_scrollBar = scrollBar;
+
+			// ... Pretty convoluted way to get the filename:
+			ITextDocument doc;
+			bool success = textView.TextBuffer.Properties.TryGetProperty<ITextDocument>(typeof(ITextDocument), out doc);
+			if (success)
+			{
+				_filename = doc.FilePath;
+			}
+			else
+			{
+				_filename = "";
+			}
 		}
 
 		public void Render(DrawingContext drawingContext)
 		{
-			NormalizedSnapshotSpanCollection[] markers = GetMarkers(
+			NormalizedSnapshotSpanCollection bookmarks = GetBookmarks(
 				_textView.TextSnapshot,
 				_markerTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
 
-			DrawMarkers(drawingContext, markers[0], Colors.BookmarkBrush);
-			DrawMarkers(drawingContext, markers[1], Colors.BreakpointBrush);
+			DrawMarkers(drawingContext, bookmarks, Colors.BookmarkBrush);
+
+			NormalizedSnapshotSpanCollection breakpoints = GetBreakpoints();
+			DrawMarkers(drawingContext, breakpoints, Colors.BreakpointBrush);
 		}
 
-		internal static NormalizedSnapshotSpanCollection[] GetMarkers(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<IVsVisibleTextMarkerTag>> tags)
+		internal NormalizedSnapshotSpanCollection GetBreakpoints()
 		{
-			List<SnapshotSpan>[] unnormalizedmarkers = new List<SnapshotSpan>[2]
+			List<SnapshotSpan> unnormalizedBreakpoints = new List<SnapshotSpan>();
+
+			foreach (EnvDTE.Breakpoint bp in _debugger.Breakpoints)
 			{
-				new List<SnapshotSpan>(),
-				new List<SnapshotSpan>()
-			};
+				if (bp.LocationType == EnvDTE.dbgBreakpointLocationType.dbgBreakpointLocationTypeFile &&
+					bp.File == _filename)
+				{
+					unnormalizedBreakpoints.Add(_textView.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(bp.FileLine).Extent);
+				}
+			}
+
+			return new NormalizedSnapshotSpanCollection(unnormalizedBreakpoints);
+		}
+
+		internal static NormalizedSnapshotSpanCollection GetBookmarks(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<IVsVisibleTextMarkerTag>> tags)
+		{
+			List<SnapshotSpan> unnormalizedBookmarks = new List<SnapshotSpan>();
 
 			foreach (IMappingTagSpan<IVsVisibleTextMarkerTag> tag in tags)
 			{
 				if (tag.Tag.Type == _bookmarkType)
 				{
-					unnormalizedmarkers[0].AddRange(tag.Span.GetSpans(snapshot));
-				}
-				else
-				if (tag.Tag.Type == _breakpointType)
-				{
-					unnormalizedmarkers[1].AddRange(tag.Span.GetSpans(snapshot));
+					unnormalizedBookmarks.AddRange(tag.Span.GetSpans(snapshot));
 				}
 			}
 
-			NormalizedSnapshotSpanCollection[] markers = new NormalizedSnapshotSpanCollection[2];
-			for (int i = 0; i < 2; ++i)
-			{
-				markers[i] = new NormalizedSnapshotSpanCollection(unnormalizedmarkers[i]);
-			}
-
-			return markers;
+			return new NormalizedSnapshotSpanCollection(unnormalizedBookmarks);
 		}
 
 		private void DrawMarkers(DrawingContext drawingContext, NormalizedSnapshotSpanCollection markers, Brush brush)

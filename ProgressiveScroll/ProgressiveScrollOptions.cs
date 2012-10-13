@@ -63,7 +63,7 @@ namespace ProgressiveScroll
 		}
 
 		[Category("General")]
-		[DisplayName("Display border")]
+		[DisplayName("Display Border")]
 		[Description("Displays a border around the visible region.")]
 		public bool CursorBorderEnabled
 		{
@@ -72,7 +72,7 @@ namespace ProgressiveScroll
 		}
 
 		[Category("General")]
-		[DisplayName("Display splitter")]
+		[DisplayName("Display Splitter")]
 		[Description("Displays the splitter control.")]
 		public bool SplitterEnabled
 		{

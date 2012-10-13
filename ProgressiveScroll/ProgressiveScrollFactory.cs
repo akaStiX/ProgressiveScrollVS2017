@@ -53,10 +53,12 @@
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
 		{
 			// Get the width from the options
-			DTE env = (DTE)ServiceProvider.GetService(typeof(DTE));
-			IsVS11 = (env.Version == "11.0");
+			DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+			IsVS11 = (dte.Version == "11.0");
 			EnvDTE.Properties props =
-				env.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
+				dte.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
+
+			EnvDTE.Debugger debugger = (EnvDTE.Debugger)dte.Debugger;
 
 			int width = (int)props.Item(OptionNames.ScrollBarWidth).Value;
 			double cursorOpacity = (double)props.Item(OptionNames.CursorOpacity).Value;
@@ -77,6 +79,7 @@
 				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
 				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textViewHost.TextView),
+				debugger,
 				scrollBar,
 				this);
 

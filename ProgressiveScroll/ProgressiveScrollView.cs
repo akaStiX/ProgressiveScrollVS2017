@@ -41,6 +41,7 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerAggregator,
+			EnvDTE.Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ProgressiveScroll progressiveScroll)
 		{
@@ -51,7 +52,7 @@ namespace ProgressiveScroll
 			_textRenderer = new TextRenderer(textView, outliningManager, scrollBar);
 			_changeRenderer = new ChangeRenderer(textView, changeTagAggregator, scrollBar);
 			_highlightRenderer = new HighlightRenderer(textView, scrollBar);
-			_markerRenderer = new MarkerRenderer(textView, markerAggregator, scrollBar);
+			_markerRenderer = new MarkerRenderer(textView, markerAggregator, debugger, scrollBar);
 
 			TextDirty = true;
 		}

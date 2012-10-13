@@ -53,6 +53,7 @@ namespace ProgressiveScroll
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
+			EnvDTE.Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ProgressiveScrollFactory factory)
 		{
@@ -82,6 +83,7 @@ namespace ProgressiveScroll
 				outliningManager,
 				changeTagAggregator,
 				markerTagAggregator,
+				debugger,
 				scrollBar,
 				this);
 
