@@ -121,9 +121,11 @@ namespace ProgressiveScroll
 			double h = SplitterEnabled ? 0 : 17;
 			if (!ProgressiveScrollFactory.IsVS11)
 			{
-				h += 17.0;
+				h += 17.0; // can't draw on top of the empty area in VS11
 			}
-			_scale = (_realScrollBarMargin.VisualElement.ActualHeight + h) / _textView.VisualSnapshot.LineCount;
+			h -= 3; // bottom margin
+
+			_scale = Math.Max(_realScrollBarMargin.VisualElement.ActualHeight + h, 0) / _textView.VisualSnapshot.LineCount;
 			_scale = Math.Min(_scale, 1.0);
 
 			_trackSpanTop = 0;

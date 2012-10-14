@@ -19,9 +19,13 @@ namespace ProgressiveScroll
 	class ProgressiveScroll : Canvas, IWpfTextViewMargin
 	{
 		public IEditorFormatMapService FormatMapService { get; set; }
-		public double DrawHeight
+		public double ClipHeight
 		{
 			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
+		}
+		public double DrawHeight
+		{
+			get { return Math.Max(ClipHeight - _bottomMargin, 0); }
 		}
 		public bool SplitterEnabled
 		{
@@ -45,6 +49,7 @@ namespace ProgressiveScroll
 
 		private int _splitterHeight = 17;
 		private int _horizontalScrollBarHeight = 17;
+		private int _bottomMargin = 3;
 
 		private static Dictionary<ProgressiveScroll, byte> _progressiveScrollDict = new Dictionary<ProgressiveScroll, byte>();
 
@@ -242,7 +247,7 @@ namespace ProgressiveScroll
 				Colors.RefreshColors();
 
 				drawingContext.PushTransform(new TranslateTransform(0.0, -_splitterHeight));
-				Rect viewRect = new Rect(0, 0, ActualWidth, DrawHeight);
+				Rect viewRect = new Rect(0, 0, ActualWidth, ClipHeight);
 				drawingContext.PushClip(new RectangleGeometry(viewRect));
 				drawingContext.DrawRectangle(
 					Colors.WhitespaceBrush,
