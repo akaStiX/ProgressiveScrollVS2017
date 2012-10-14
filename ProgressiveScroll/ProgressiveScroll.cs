@@ -13,6 +13,7 @@ using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Editor;
 using EnvDTE;
 using System.Collections.Generic;
+using System.Windows.Threading;
 
 namespace ProgressiveScroll
 {
@@ -212,7 +213,9 @@ namespace ProgressiveScroll
 
 		private void OnTagsChanged(object sender, EventArgs e)
 		{
-			this.InvalidateVisual();
+			this.Dispatcher.Invoke(
+				DispatcherPriority.Normal,
+				new Action(() => InvalidateVisual()));
 		}
 
 		void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
