@@ -30,7 +30,7 @@ namespace ProgressiveScroll
 
 		public void Render(DrawingContext drawingContext)
 		{
-			if (HighlightWordTaggerProvider.Taggers[_textView] == null)
+			if (!HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
 			{
 				return;
 			}

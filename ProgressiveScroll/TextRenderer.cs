@@ -71,7 +71,11 @@ namespace ProgressiveScroll
 		public void Render()
 		{
 			// Find the hidden regions
-			IEnumerable<ICollapsed> collapsedRegions = _outliningManager.GetCollapsedRegions(new SnapshotSpan(_textView.TextBuffer.CurrentSnapshot, new Span(0, _textView.TextBuffer.CurrentSnapshot.Length)));
+			IEnumerable<ICollapsed> collapsedRegions = new List<ICollapsed>();
+			if (_outliningManager != null)
+			{
+				collapsedRegions = _outliningManager.GetCollapsedRegions(new SnapshotSpan(_textView.TextBuffer.CurrentSnapshot, new Span(0, _textView.TextBuffer.CurrentSnapshot.Length)));
+			}
 			IEnumerator<ICollapsed> currentCollapsedRegion = collapsedRegions.GetEnumerator();
 			SnapshotSpan? currentCollapsedSnapshotSpan = null;
 			if (currentCollapsedRegion.MoveNext())
@@ -80,12 +84,18 @@ namespace ProgressiveScroll
 			}
 
 			// Get the highlights
-			IEnumerable<ITagSpan<HighlightWordTag>> highlightsEnumerable = HighlightWordTaggerProvider.Taggers[_textView].GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
 			List<SnapshotSpan> highlightList = new List<SnapshotSpan>();
-			foreach (ITagSpan<HighlightWordTag> highlight in highlightsEnumerable)
+
+			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
 			{
-				highlightList.Add(highlight.Span);
+				IEnumerable<ITagSpan<HighlightWordTag>> highlightsEnumerable = HighlightWordTaggerProvider.Taggers[_textView].GetTags(new NormalizedSnapshotSpanCollection(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
+
+				foreach (ITagSpan<HighlightWordTag> highlight in highlightsEnumerable)
+				{
+					highlightList.Add(highlight.Span);
+				}
 			}
+
 			NormalizedSnapshotSpanCollection highlights = new NormalizedSnapshotSpanCollection(highlightList);
 			int highlightIndex = 0;
 

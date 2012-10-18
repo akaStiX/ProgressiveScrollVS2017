@@ -163,7 +163,7 @@ namespace ProgressiveScroll
 
 		static bool WordExtentIsValid(SnapshotPoint currentRequest, TextExtent word)
 		{
-			return word.IsSignificant
+			return true //word.IsSignificant
 				&& currentRequest.Snapshot.GetText(word.Span).Any(c => char.IsLetter(c) || char.IsNumber(c));
 		}
 

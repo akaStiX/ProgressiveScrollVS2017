@@ -50,8 +50,15 @@
 
 		public static bool IsVS11 { get; set; }
 
+		public static readonly List<string> RejectedRoles = new List<string>() { "DIFF", "VSMERGEDEFAULT" };
+
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
 		{
+			if (textViewHost.TextView.Roles.ContainsAny(RejectedRoles))
+			{
+				return null;
+			}
+
 			// Get the width from the options
 			DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
 			IsVS11 = (dte.Version == "11.0");

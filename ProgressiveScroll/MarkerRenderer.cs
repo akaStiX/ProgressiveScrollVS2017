@@ -74,7 +74,12 @@ namespace ProgressiveScroll
 				if (bp.LocationType == EnvDTE.dbgBreakpointLocationType.dbgBreakpointLocationTypeFile &&
 					bp.File == _filename)
 				{
-					unnormalizedBreakpoints.Add(_textView.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(bp.FileLine).Extent);
+					try
+					{
+						ITextSnapshotLine line = _textView.TextBuffer.CurrentSnapshot.GetLineFromLineNumber(bp.FileLine);
+						unnormalizedBreakpoints.Add(line.Extent);
+					}
+					catch (System.ArgumentOutOfRangeException) {}
 				}
 			}
 

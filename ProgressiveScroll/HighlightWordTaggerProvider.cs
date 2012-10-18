@@ -40,9 +40,15 @@ namespace ProgressiveScroll
 
 		public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag
 		{
-			//provide highlighting only on the top buffer
+			// Provide highlighting only on the top buffer
+			// HTML files for instance will fail here
 			if (textView.TextBuffer != buffer)
 				return null;
+
+			if (textView.Roles.ContainsAny(ProgressiveScrollFactory.RejectedRoles))
+			{
+				return null;
+			}
 
 			ITextStructureNavigator textStructureNavigator =
 				TextStructureNavigatorSelector.GetTextStructureNavigator(buffer);

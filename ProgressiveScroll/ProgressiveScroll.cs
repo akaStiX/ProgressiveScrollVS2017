@@ -180,7 +180,10 @@ namespace ProgressiveScroll
 			_scrollBar.TrackSpanChanged += OnViewChanged;
 			_markerTagAggregator.TagsChanged += OnTagsChanged;
 			_errorTagAggregator.TagsChanged += OnTagsChanged;
-			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
+			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
+			{
+				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
+			}
 
 			this.MouseLeftButtonDown += OnMouseLeftButtonDown;
 			this.MouseMove += OnMouseMove;
@@ -193,7 +196,10 @@ namespace ProgressiveScroll
 			_scrollBar.TrackSpanChanged -= OnViewChanged;
 			_markerTagAggregator.TagsChanged -= OnTagsChanged;
 			_errorTagAggregator.TagsChanged -= OnTagsChanged;
-			HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTextChanged;
+			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
+			{
+				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTextChanged;
+			}
 
 			this.MouseLeftButtonDown -= OnMouseLeftButtonDown;
 			this.MouseMove -= OnMouseMove;
