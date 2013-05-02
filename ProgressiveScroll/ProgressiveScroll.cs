@@ -122,7 +122,7 @@ namespace ProgressiveScroll
 			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
 			_progressiveScrollView.MarkerRenderer.ErrorsEnabled = options.ErrorsEnabled;
 			_progressiveScrollView.TextDirty = true;
-			this.InvalidateVisual();
+			InvalidateAsync();
 		}
 
 		private void ThrowIfDisposed()
@@ -209,19 +209,29 @@ namespace ProgressiveScroll
 		private void OnTextChanged(object sender, EventArgs e)
 		{
 			_progressiveScrollView.TextDirty = true;
-			this.InvalidateVisual();
+			InvalidateAsync();
 		}
 
 		private void OnViewChanged(object sender, EventArgs e)
 		{
-			this.InvalidateVisual();
+			InvalidateAsync();
 		}
 
 		private void OnTagsChanged(object sender, EventArgs e)
 		{
-			this.Dispatcher.Invoke(
-				DispatcherPriority.Normal,
-				new Action(() => InvalidateVisual()));
+			InvalidateAsync();
+		}
+
+		void InvalidateAsync()
+		{
+			try
+			{
+				this.Dispatcher.BeginInvoke(
+					DispatcherPriority.Normal,
+					new Action(() => InvalidateVisual()));
+			}
+			catch (Exception)
+			{ }
 		}
 
 		void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
