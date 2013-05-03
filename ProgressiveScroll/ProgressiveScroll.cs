@@ -1,59 +1,39 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
+using EnvDTE;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Document;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text.Outlining;
-using System.Windows.Input;
-using System.Windows;
-using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Tagging;
-using Microsoft.VisualStudio.Text.Document;
-using Microsoft.VisualStudio.Text.Classification;
-using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Editor;
-using EnvDTE;
-using System.Collections.Generic;
-using System.Windows.Threading;
 
 namespace ProgressiveScroll
 {
-	class ProgressiveScroll : Canvas, IWpfTextViewMargin
+	internal class ProgressiveScroll : Canvas, IWpfTextViewMargin
 	{
-		public IEditorFormatMapService FormatMapService { get; set; }
-		public double ClipHeight
-		{
-			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
-		}
-		public double DrawHeight
-		{
-			get { return Math.Max(ClipHeight - _bottomMargin, 0); }
-		}
-		public bool SplitterEnabled
-		{
-			get { return _splitterHeight == 0; }
-			set { _splitterHeight = value ? 0 : 17; }
-		}
 		public const string MarginName = "ProgressiveScroll";
-		public ColorSet Colors { get; set; }
-		public ProgressiveScrollView ScrollView { get { return _progressiveScrollView; } }
 
+		private static readonly Dictionary<ProgressiveScroll, byte> ProgressiveScrollDict =
+			new Dictionary<ProgressiveScroll, byte>();
 
+		private readonly ITagAggregator<IErrorTag> _errorTagAggregator;
+		private readonly int _horizontalScrollBarHeight = 17;
+		private readonly ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
+		private readonly ProgressiveScrollView _progressiveScrollView;
+		private readonly SimpleScrollBar _scrollBar;
+		private readonly IWpfTextView _textView;
 
-		private bool _isDisposed = false;
-
-		private IWpfTextViewHost _textViewHost;
-		private IWpfTextView _textView;
-		private SimpleScrollBar _scrollBar;
-		private ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
-		private ITagAggregator<IErrorTag> _errorTagAggregator;
-		private ProgressiveScrollView _progressiveScrollView;
-
+		private const int BottomMargin = 3;
+		private bool _isDisposed;
 		private int _splitterHeight = 17;
-		private int _horizontalScrollBarHeight = 17;
-		private int _bottomMargin = 3;
-
-		private static Dictionary<ProgressiveScroll, byte> _progressiveScrollDict = new Dictionary<ProgressiveScroll, byte>();
-
+		private IWpfTextViewHost _textViewHost;
 
 		public ProgressiveScroll(
 			IWpfTextViewHost textViewHost,
@@ -61,7 +41,7 @@ namespace ProgressiveScroll
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
 			ITagAggregator<IErrorTag> errorTagAggregator,
-			EnvDTE.Debugger debugger,
+			Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ProgressiveScrollFactory factory)
 		{
@@ -75,7 +55,7 @@ namespace ProgressiveScroll
 				_horizontalScrollBarHeight = 0;
 			}
 
-			_progressiveScrollDict.Add(this, 0);
+			ProgressiveScrollDict.Add(this, 0);
 
 			_textViewHost = textViewHost;
 			_textView = textViewHost.TextView;
@@ -100,9 +80,81 @@ namespace ProgressiveScroll
 			RegisterEvents();
 		}
 
+		public ColorSet Colors { get; set; }
+
+		public ProgressiveScrollView ScrollView
+		{
+			get { return _progressiveScrollView; }
+		}
+
+		public IEditorFormatMapService FormatMapService { get; set; }
+
+		public double ClipHeight
+		{
+			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
+		}
+
+		public double DrawHeight
+		{
+			get { return Math.Max(ClipHeight - BottomMargin, 0); }
+		}
+
+		public bool SplitterEnabled
+		{
+			get { return _splitterHeight == 0; }
+			set { _splitterHeight = value ? 0 : 17; }
+		}
+
+		#region IWpfTextViewMargin Members
+
+		public FrameworkElement VisualElement
+		{
+			get
+			{
+				ThrowIfDisposed();
+				return this;
+			}
+		}
+
+		public double MarginSize
+		{
+			get
+			{
+				ThrowIfDisposed();
+				return ActualWidth;
+			}
+		}
+
+		public bool Enabled
+		{
+			get
+			{
+				ThrowIfDisposed();
+				return true;
+			}
+		}
+
+		public ITextViewMargin GetTextViewMargin(string marginName)
+		{
+			return (marginName == MarginName) ? this : null;
+		}
+
+		public void Dispose()
+		{
+			if (!_isDisposed)
+			{
+				HighlightWordTaggerProvider.Taggers.Remove(_textView);
+				ProgressiveScrollDict.Remove(this);
+				GC.SuppressFinalize(this);
+				_isDisposed = true;
+			}
+		}
+
+		#endregion
+
 		public static void SettingsChanged(GeneralOptionPage options)
 		{
-			foreach (KeyValuePair<ProgressiveScroll, byte> kv in _progressiveScrollDict)
+			foreach (var kv in ProgressiveScrollDict)
 			{
 				kv.Key.UpdateSettings(options);
 			}
@@ -122,6 +174,9 @@ namespace ProgressiveScroll
 			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
 			_progressiveScrollView.MarkerRenderer.ErrorsEnabled = options.ErrorsEnabled;
 			_progressiveScrollView.TextDirty = true;
+
+			WordSelectionCommandFilter.AltHighlight = options.AltHighlight;
+
 			InvalidateAsync();
 		}
 
@@ -129,49 +184,6 @@ namespace ProgressiveScroll
 		{
 			if (_isDisposed)
 				throw new ObjectDisposedException(MarginName);
-		}
-
-		public System.Windows.FrameworkElement VisualElement
-		{
-			get
-			{
-				ThrowIfDisposed();
-				return this;
-			}
-		}
-
-		public double MarginSize
-		{
-			get
-			{
-				this.ThrowIfDisposed();
-				return this.ActualWidth;
-			}
-		}
-
-		public bool Enabled
-		{
-			get
-			{
-				ThrowIfDisposed();
-				return true;
-			}
-		}
-
-		public ITextViewMargin GetTextViewMargin(string marginName)
-		{
-			return (marginName == ProgressiveScroll.MarginName) ? (IWpfTextViewMargin)this : null;
-		}
-
-		public void Dispose()
-		{
-			if (!_isDisposed)
-			{
-				HighlightWordTaggerProvider.Taggers.Remove(_textView);
-				_progressiveScrollDict.Remove(this);
-				GC.SuppressFinalize(this);
-				_isDisposed = true;
-			}
 		}
 
 		private void RegisterEvents()
@@ -185,25 +197,9 @@ namespace ProgressiveScroll
 				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
 			}
 
-			this.MouseLeftButtonDown += OnMouseLeftButtonDown;
-			this.MouseMove += OnMouseMove;
-			this.MouseLeftButtonUp += OnMouseLeftButtonUp;
-		}
-
-		private void UnregisterEvents()
-		{
-			_textView.LayoutChanged -= OnTextChanged;
-			_scrollBar.TrackSpanChanged -= OnViewChanged;
-			_markerTagAggregator.TagsChanged -= OnTagsChanged;
-			_errorTagAggregator.TagsChanged -= OnTagsChanged;
-			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
-			{
-				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged -= OnTextChanged;
-			}
-
-			this.MouseLeftButtonDown -= OnMouseLeftButtonDown;
-			this.MouseMove -= OnMouseMove;
-			this.MouseLeftButtonUp -= OnMouseLeftButtonUp;
+			MouseLeftButtonDown += OnMouseLeftButtonDown;
+			MouseMove += OnMouseMove;
+			MouseLeftButtonUp += OnMouseLeftButtonUp;
 		}
 
 		private void OnTextChanged(object sender, EventArgs e)
@@ -222,38 +218,39 @@ namespace ProgressiveScroll
 			InvalidateAsync();
 		}
 
-		void InvalidateAsync()
+		private void InvalidateAsync()
 		{
 			try
 			{
-				this.Dispatcher.BeginInvoke(
+				Dispatcher.BeginInvoke(
 					DispatcherPriority.Normal,
 					new Action(() => InvalidateVisual()));
 			}
 			catch (Exception)
-			{ }
-		}
-
-		void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
-		{
-			this.CaptureMouse();
-
-			Point pt = e.GetPosition(this);
-			this.ScrollViewToYCoordinate(pt.Y);
-		}
-
-		void OnMouseMove(object sender, MouseEventArgs e)
-		{
-			if (e.LeftButton == MouseButtonState.Pressed && this.IsMouseCaptured)
 			{
-				Point pt = e.GetPosition(this);
-				this.ScrollViewToYCoordinate(pt.Y);
 			}
 		}
 
-		void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
 		{
-			this.ReleaseMouseCapture();
+			CaptureMouse();
+
+			Point pt = e.GetPosition(this);
+			ScrollViewToYCoordinate(pt.Y);
+		}
+
+		private void OnMouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.LeftButton == MouseButtonState.Pressed && IsMouseCaptured)
+			{
+				Point pt = e.GetPosition(this);
+				ScrollViewToYCoordinate(pt.Y);
+			}
+		}
+
+		private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			ReleaseMouseCapture();
 		}
 
 		protected override void OnRender(DrawingContext drawingContext)
@@ -266,14 +263,14 @@ namespace ProgressiveScroll
 				Colors.RefreshColors();
 
 				drawingContext.PushTransform(new TranslateTransform(0.0, -_splitterHeight));
-				Rect viewRect = new Rect(0, 0, ActualWidth, ClipHeight);
+				var viewRect = new Rect(0, 0, ActualWidth, ClipHeight);
 				drawingContext.PushClip(new RectangleGeometry(viewRect));
 				drawingContext.DrawRectangle(
 					Colors.WhitespaceBrush,
 					null,
 					viewRect);
 
-				this.VisualBitmapScalingMode = System.Windows.Media.BitmapScalingMode.Fant;
+				VisualBitmapScalingMode = BitmapScalingMode.Fant;
 
 				_progressiveScrollView.Render(drawingContext);
 
@@ -294,10 +291,10 @@ namespace ProgressiveScroll
 			}
 			else
 			{
-				y = Math.Min(y, yLastLine + (_scrollBar.ThumbHeight / 2.0));
-				double fraction = (y - yLastLine) / _scrollBar.ThumbHeight; // 0 to 0.5
-				double dyDistanceFromTopOfViewport = _textView.ViewportHeight * (0.5 - fraction);
-				SnapshotPoint end = new SnapshotPoint(_textView.TextSnapshot, _textView.TextSnapshot.Length);
+				y = Math.Min(y, yLastLine + (_scrollBar.ThumbHeight/2.0));
+				double fraction = (y - yLastLine)/_scrollBar.ThumbHeight; // 0 to 0.5
+				double dyDistanceFromTopOfViewport = _textView.ViewportHeight*(0.5 - fraction);
+				var end = new SnapshotPoint(_textView.TextSnapshot, _textView.TextSnapshot.Length);
 
 				_textView.DisplayTextLineContainingBufferPosition(end, dyDistanceFromTopOfViewport, ViewRelativePosition.Top);
 			}

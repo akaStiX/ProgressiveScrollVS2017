@@ -1,28 +1,28 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Tagging;
+﻿using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Utilities;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.OLE.Interop;
-using Microsoft.VisualStudio.TextManager.Interop;
-using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.Editor;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Tagging;
+using Microsoft.VisualStudio.TextManager.Interop;
+using Microsoft.VisualStudio.Utilities;
 
 namespace ProgressiveScroll
 {
-	[Export(typeof(IVsTextViewCreationListener))]
-	[Export(typeof(IViewTaggerProvider))]
+	[Export(typeof (IVsTextViewCreationListener))]
+	[Export(typeof (IViewTaggerProvider))]
 	[ContentType("code")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]
-	[TagType(typeof(ClassificationTag))]
+	[TagType(typeof (ClassificationTag))]
 	internal class HighlightWordTaggerProvider : IViewTaggerProvider, IVsTextViewCreationListener
 	{
+		[Import(typeof (IVsEditorAdaptersFactoryService))]
+		internal IVsEditorAdaptersFactoryService EditorFactory = null;
+
 		[Import]
 		internal ITextSearchService TextSearchService { get; set; }
 
@@ -32,11 +32,17 @@ namespace ProgressiveScroll
 		[Import]
 		public IClassificationTypeRegistryService Registry { get; set; }
 
-		[Import(typeof(IVsEditorAdaptersFactoryService))]
-		internal IVsEditorAdaptersFactoryService _editorFactory = null;
 
-		private static Dictionary<ITextView, HighlightWordTagger> _taggers = new Dictionary<ITextView, HighlightWordTagger>();
-		public static Dictionary<ITextView, HighlightWordTagger> Taggers { get { return _taggers; } }
+
+		private static readonly Dictionary<ITextView, HighlightWordTagger> _taggers =
+			new Dictionary<ITextView, HighlightWordTagger>();
+
+		public static Dictionary<ITextView, HighlightWordTagger> Taggers
+		{
+			get { return _taggers; }
+		}
+
+		#region IViewTaggerProvider Members
 
 		public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag
 		{
@@ -45,6 +51,7 @@ namespace ProgressiveScroll
 			if (textView.TextBuffer != buffer)
 				return null;
 
+			// This checks for diff/merge type views
 			if (textView.Roles.ContainsAny(ProgressiveScrollFactory.RejectedRoles))
 			{
 				return null;
@@ -55,36 +62,43 @@ namespace ProgressiveScroll
 
 			IClassificationType classificationType = Registry.GetClassificationType("PSHighlightWordFormatDefinition");
 
-			HighlightWordTagger tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator, classificationType);
+			var tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator, classificationType);
 			Taggers[textView] = tagger;
 			return tagger as ITagger<T>;
 		}
 
+		#endregion
+
+		#region IVsTextViewCreationListener Members
+
 		public void VsTextViewCreated(IVsTextView textViewAdapter)
 		{
-			IWpfTextView textView = _editorFactory.GetWpfTextView(textViewAdapter);
+			IWpfTextView textView = EditorFactory.GetWpfTextView(textViewAdapter);
 			if (textView == null)
 				return;
 
-			WordSelectionCommandFilter commandFilter = new WordSelectionCommandFilter(textView);
+			var commandFilter = new WordSelectionCommandFilter(textView);
 			Taggers[textView].CommandFilter = commandFilter;
 
 			IOleCommandTarget next;
-			if (textViewAdapter != null)
+
+			if (textViewAdapter == null)
+				return;
+
+			int hr = textViewAdapter.AddCommandFilter(commandFilter, out next);
+
+			if (hr != VSConstants.S_OK)
+				return;
+
+			commandFilter._added = true;
+
+			//you'll need the next target for Exec and QueryStatus
+			if (next != null)
 			{
-				int hr = textViewAdapter.AddCommandFilter(commandFilter, out next);
-
-				if (hr == VSConstants.S_OK)
-				{
-					commandFilter._added = true;
-
-					//you'll need the next target for Exec and QueryStatus
-					if (next != null)
-					{
-						commandFilter._nextTarget = next;
-					}
-				}
+				commandFilter._nextTarget = next;
 			}
 		}
+
+		#endregion
 	}
 }

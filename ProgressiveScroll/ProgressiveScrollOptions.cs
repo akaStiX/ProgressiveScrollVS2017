@@ -23,6 +23,7 @@ namespace ProgressiveScroll
 		public const string CursorBorderEnabled = "CursorBorderEnabled";
 		public const string SplitterEnabled = "SplitterEnabled";
 		public const string ErrorsEnabled = "ErrorsEnabled";
+		public const string AltHighlight = "AltHighlight";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -36,6 +37,7 @@ namespace ProgressiveScroll
 		private bool _cursorBorderEnabled = false;
 		private bool _splitterEnabled = false;
 		private bool _errorsEnabled = false;
+		private bool _altHighlight = false;
 
 		[Category("General")]
 		[DisplayName("Width")]
@@ -89,6 +91,15 @@ namespace ProgressiveScroll
 		{
 			get { return _errorsEnabled; }
 			set { _errorsEnabled = value; }
+		}
+
+		[Category("General")]
+		[DisplayName("Alt highlight")]
+		[Description("Requires the user to hold Alt to highlight text.")]
+		public bool AltHighlight
+		{
+			get { return _altHighlight; }
+			set { _altHighlight = value; }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)

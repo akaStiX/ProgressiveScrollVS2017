@@ -1,60 +1,34 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Microsoft.VisualStudio.Text.Tagging;
-using Microsoft.VisualStudio.Text.Classification;
 using System.ComponentModel.Composition;
-using Microsoft.VisualStudio.Utilities;
-using System.Windows.Media;
-using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Operations;
-using Microsoft.VisualStudio.OLE.Interop;
+using System.Linq;
+using System.Windows.Input;
 using Microsoft.VisualStudio;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Classification;
+using Microsoft.VisualStudio.Text.Editor;
+using Microsoft.VisualStudio.Text.Operations;
+using Microsoft.VisualStudio.Text.Tagging;
+using Microsoft.VisualStudio.Utilities;
 
 namespace ProgressiveScroll
 {
 	public static class TypeExports
 	{
-		[Export(typeof(ClassificationTypeDefinition))]
+		[Export(typeof (ClassificationTypeDefinition))]
 		[Name("PSHighlightWordFormatDefinition")]
 		public static ClassificationTypeDefinition HighlightWordClassificationType;
 	}
 
-
-
 	internal class HighlightWordTag : ClassificationTag
 	{
-		public HighlightWordTag(IClassificationType type) : base(type)
-		{
-		}
+		public HighlightWordTag(IClassificationType type) : base(type) {}
 	}
 
 	internal class HighlightWordTagger : ITagger<HighlightWordTag>
 	{
-		ITextView View { get; set; }
-		ITextBuffer SourceBuffer { get; set; }
-		ITextSearchService TextSearchService { get; set; }
-		ITextStructureNavigator TextStructureNavigator { get; set; }
-		IClassificationType ClassificationType { get; set; }
-		NormalizedSnapshotSpanCollection WordSpans { get; set; }
-		SnapshotSpan? CurrentWord { get; set; }
-		SnapshotPoint RequestedPoint { get; set; }
-		object updateLock = new object();
-
-		private WordSelectionCommandFilter commandFilter { get; set; }
-		public WordSelectionCommandFilter CommandFilter
-		{
-			get { return commandFilter; }
-			set
-			{
-				commandFilter = value;
-				commandFilter.CommandChanged += SelectionChanged;
-			}
-		}
-
-		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
+		private readonly object _updateLock = new object();
 
 		public HighlightWordTagger(
 			ITextView view,
@@ -73,115 +47,30 @@ namespace ProgressiveScroll
 			View.Selection.SelectionChanged += SelectionChanged;
 		}
 
-		void SelectionChanged(object sender, EventArgs e)
+		private ITextView View { get; set; }
+		private ITextBuffer SourceBuffer { get; set; }
+		private ITextSearchService TextSearchService { get; set; }
+		private ITextStructureNavigator TextStructureNavigator { get; set; }
+		private IClassificationType ClassificationType { get; set; }
+		private NormalizedSnapshotSpanCollection WordSpans { get; set; }
+		private SnapshotSpan? CurrentWord { get; set; }
+		private SnapshotPoint RequestedPoint { get; set; }
+
+		private WordSelectionCommandFilter _commandFilter = null;
+
+		public WordSelectionCommandFilter CommandFilter
 		{
-			if (CommandFilter != null)
+			get { return _commandFilter; }
+			set
 			{
-				if (CommandFilter.Selected)
-				{
-					UpdateSelection(View.Caret.Position);
-				}
-				else
-				if (CommandFilter.Unselected)
-				{
-					SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), null);
-				}
+				_commandFilter = value;
+				_commandFilter.CommandChanged += SelectionChanged;
 			}
 		}
 
-		void UpdateSelection(CaretPosition caretPosition)
-		{
-			SnapshotPoint? point = caretPosition.Point.GetPoint(SourceBuffer, caretPosition.Affinity);
+		#region ITagger<HighlightWordTag> Members
 
-			if (!point.HasValue)
-				return;
-
-			// If the new caret position is still within the current word (and on the same snapshot), we don't need to check it
-			if (CurrentWord.HasValue
-				&& CurrentWord.Value.Snapshot == View.TextSnapshot
-				&& point.Value >= CurrentWord.Value.Start
-				&& point.Value <= CurrentWord.Value.End)
-			{
-				return;
-			}
-
-			RequestedPoint = point.Value;
-			UpdateWordAdornments();
-		}
-
-		void UpdateWordAdornments()
-		{
-			SnapshotPoint currentRequest = RequestedPoint;
-			List<SnapshotSpan> wordSpans = new List<SnapshotSpan>();
-			//Find all words in the buffer like the one the caret is on
-			TextExtent word = TextStructureNavigator.GetExtentOfWord(currentRequest);
-			bool foundWord = true;
-			//If we've selected something not worth highlighting, we might have missed a "word" by a little bit
-			if (!WordExtentIsValid(currentRequest, word))
-			{
-				//Before we retry, make sure it is worthwhile
-				if (word.Span.Start != currentRequest
-					 || currentRequest == currentRequest.GetContainingLine().Start
-					 || char.IsWhiteSpace((currentRequest - 1).GetChar()))
-				{
-					foundWord = false;
-				}
-				else
-				{
-					// Try again, one character previous.
-					//If the caret is at the end of a word, pick up the word.
-					word = TextStructureNavigator.GetExtentOfWord(currentRequest - 1);
-
-					//If the word still isn't valid, we're done
-					if (!WordExtentIsValid(currentRequest, word))
-						foundWord = false;
-				}
-			}
-
-			if (!foundWord)
-			{
-				//If we couldn't find a word, clear out the existing markers
-				SynchronousUpdate(currentRequest, new NormalizedSnapshotSpanCollection(), null);
-				return;
-			}
-
-			SnapshotSpan currentWord = word.Span;
-			//If this is the current word, and the caret moved within a word, we're done.
-			if (CurrentWord.HasValue && currentWord == CurrentWord)
-				return;
-
-			//Find the new spans
-			FindData findData = new FindData(currentWord.GetText(), currentWord.Snapshot);
-			findData.FindOptions = FindOptions.WholeWord | FindOptions.MatchCase;
-
-			wordSpans.AddRange(TextSearchService.FindAll(findData));
-
-			//If another change hasn't happened, do a real update
-			if (currentRequest == RequestedPoint)
-				SynchronousUpdate(currentRequest, new NormalizedSnapshotSpanCollection(wordSpans), currentWord);
-		}
-
-		static bool WordExtentIsValid(SnapshotPoint currentRequest, TextExtent word)
-		{
-			return true //word.IsSignificant
-				&& currentRequest.Snapshot.GetText(word.Span).Any(c => char.IsLetter(c) || char.IsNumber(c));
-		}
-
-		void SynchronousUpdate(SnapshotPoint currentRequest, NormalizedSnapshotSpanCollection newSpans, SnapshotSpan? newCurrentWord)
-		{
-			lock (updateLock)
-			{
-				if (currentRequest != RequestedPoint)
-					return;
-
-				WordSpans = newSpans;
-				CurrentWord = newCurrentWord;
-
-				var tempEvent = TagsChanged;
-				if (tempEvent != null)
-					tempEvent(this, new SnapshotSpanEventArgs(new SnapshotSpan(SourceBuffer.CurrentSnapshot, 0, SourceBuffer.CurrentSnapshot.Length)));
-			}
-		}
+		public event EventHandler<SnapshotSpanEventArgs> TagsChanged;
 
 		public IEnumerable<ITagSpan<HighlightWordTag>> GetTags(NormalizedSnapshotSpanCollection spans)
 		{
@@ -217,20 +106,133 @@ namespace ProgressiveScroll
 				yield return new TagSpan<HighlightWordTag>(span, new HighlightWordTag(ClassificationType));
 			}
 		}
+
+		#endregion
+
+		private void SelectionChanged(object sender, EventArgs e)
+		{
+			if (CommandFilter != null)
+			{
+				if (CommandFilter.Selected)
+				{
+					UpdateSelection(View.Caret.Position);
+				}
+				else if (CommandFilter.Unselected)
+				{
+					SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), null);
+				}
+			}
+		}
+
+		private void UpdateSelection(CaretPosition caretPosition)
+		{
+			SnapshotPoint? point = caretPosition.Point.GetPoint(SourceBuffer, caretPosition.Affinity);
+
+			if (!point.HasValue)
+				return;
+
+			// If the new caret position is still within the current word (and on the same snapshot), we don't need to check it
+			if (CurrentWord.HasValue
+			    && CurrentWord.Value.Snapshot == View.TextSnapshot
+			    && point.Value >= CurrentWord.Value.Start
+			    && point.Value <= CurrentWord.Value.End)
+			{
+				return;
+			}
+
+			RequestedPoint = point.Value;
+			UpdateWordAdornments();
+		}
+
+		private void UpdateWordAdornments()
+		{
+			SnapshotPoint currentRequest = RequestedPoint;
+			var wordSpans = new List<SnapshotSpan>();
+
+			// Find all words in the buffer like the one the caret is on
+			TextExtent word = TextStructureNavigator.GetExtentOfWord(currentRequest);
+			bool foundWord = true;
+
+			// If we've selected something not worth highlighting, we might have missed a "word" by a little bit
+			if (!WordExtentIsValid(currentRequest, word))
+			{
+				// Before we retry, make sure it is worthwhile
+				if (word.Span.Start != currentRequest
+				    || currentRequest == currentRequest.GetContainingLine().Start
+				    || char.IsWhiteSpace((currentRequest - 1).GetChar()))
+				{
+					foundWord = false;
+				}
+				else
+				{
+					// Try again, one character previous.
+					// If the caret is at the end of a word, pick up the word.
+					word = TextStructureNavigator.GetExtentOfWord(currentRequest - 1);
+
+					// If the word still isn't valid, we're done
+					if (!WordExtentIsValid(currentRequest, word))
+						foundWord = false;
+				}
+			}
+
+			if (!foundWord)
+			{
+				//If we couldn't find a word, clear out the existing markers
+				SynchronousUpdate(currentRequest, new NormalizedSnapshotSpanCollection(), null);
+				return;
+			}
+
+			SnapshotSpan currentWord = word.Span;
+			//If this is the current word, and the caret moved within a word, we're done.
+			if (CurrentWord.HasValue && currentWord == CurrentWord)
+				return;
+
+			//Find the new spans
+			var findData = new FindData(currentWord.GetText(), currentWord.Snapshot);
+			findData.FindOptions = FindOptions.WholeWord | FindOptions.MatchCase;
+
+			wordSpans.AddRange(TextSearchService.FindAll(findData));
+
+			// If another change hasn't happened, do a real update
+			if (currentRequest == RequestedPoint)
+				SynchronousUpdate(currentRequest, new NormalizedSnapshotSpanCollection(wordSpans), currentWord);
+		}
+
+		private static bool WordExtentIsValid(SnapshotPoint currentRequest, TextExtent word)
+		{
+			return currentRequest.Snapshot.GetText(word.Span).Any(c => char.IsLetter(c) || char.IsNumber(c));
+		}
+
+		private void SynchronousUpdate(SnapshotPoint currentRequest, NormalizedSnapshotSpanCollection newSpans,
+		                               SnapshotSpan? newCurrentWord)
+		{
+			lock (_updateLock)
+			{
+				if (currentRequest != RequestedPoint)
+					return;
+
+				WordSpans = newSpans;
+				CurrentWord = newCurrentWord;
+
+				EventHandler<SnapshotSpanEventArgs> tempEvent = TagsChanged;
+				if (tempEvent != null)
+					tempEvent(this,
+					          new SnapshotSpanEventArgs(new SnapshotSpan(SourceBuffer.CurrentSnapshot, 0,
+					                                                     SourceBuffer.CurrentSnapshot.Length)));
+			}
+		}
 	}
 
+
+	// Detects double click input
 	internal class WordSelectionCommandFilter : IOleCommandTarget
 	{
-		private IWpfTextView _textView;
-		internal IOleCommandTarget _nextTarget;
+		public static bool AltHighlight { get; set; }
 		internal bool _added;
+		internal IOleCommandTarget _nextTarget;
 		internal bool _selected;
+		private IWpfTextView _textView;
 		internal bool _unselected;
-
-		public event EventHandler CommandChanged;
-
-		public bool Selected { get { return _selected; } }
-		public bool Unselected { get { return _unselected; } }
 
 		public WordSelectionCommandFilter(IWpfTextView textView)
 		{
@@ -239,19 +241,33 @@ namespace ProgressiveScroll
 			_unselected = false;
 		}
 
+		public bool Selected
+		{
+			get { return _selected; }
+		}
+
+		public bool Unselected
+		{
+			get { return _unselected; }
+		}
+
+		#region IOleCommandTarget Members
+
+
+		// Determines which events are handled
 		int IOleCommandTarget.QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
 		{
 			if (pguidCmdGroup == VSConstants.VSStd2K &&
-				cCmds == 1)
+			    cCmds == 1)
 			{
-				if (prgCmds[0].cmdID == (uint)VSConstants.VSStd2KCmdID.DOUBLECLICK)
+				bool altPressed = !AltHighlight || (Keyboard.PrimaryDevice.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt;
+				if (prgCmds[0].cmdID == (uint) VSConstants.VSStd2KCmdID.DOUBLECLICK && altPressed)
 				{
 					//prgCmds[0].cmdf = OLECMDF_SUPPORTED | OLECMDF_ENABLED;
 					prgCmds[0].cmdf = 1 | 2;
 					return 0;
 				}
-				else
-				if (prgCmds[0].cmdID == (uint)VSConstants.VSStd2KCmdID.ECMD_LEFTCLICK)
+				else if (prgCmds[0].cmdID == (uint) VSConstants.VSStd2KCmdID.ECMD_LEFTCLICK)
 				{
 					_selected = false;
 					_unselected = false;
@@ -268,17 +284,16 @@ namespace ProgressiveScroll
 			}
 		}
 
-		int IOleCommandTarget.Exec(ref Guid pguidCmdGroup, uint nCmdID, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
+		int IOleCommandTarget.Exec(ref Guid pguidCmdGroup, uint nCmdId, uint nCmdexecopt, IntPtr pvaIn, IntPtr pvaOut)
 		{
 			if (pguidCmdGroup == VSConstants.VSStd2K)
 			{
-				if (nCmdID == (uint)VSConstants.VSStd2KCmdID.DOUBLECLICK)
+				if (nCmdId == (uint) VSConstants.VSStd2KCmdID.DOUBLECLICK)
 				{
 					_unselected = false;
 					_selected = true;
 				}
-				else
-				if (nCmdID == (uint)VSConstants.VSStd2KCmdID.CANCEL)
+				else if (nCmdId == (uint) VSConstants.VSStd2KCmdID.CANCEL)
 				{
 					_unselected = true;
 					_selected = false;
@@ -288,12 +303,16 @@ namespace ProgressiveScroll
 
 			if (_nextTarget != null)
 			{
-				return _nextTarget.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+				return _nextTarget.Exec(ref pguidCmdGroup, nCmdId, nCmdexecopt, pvaIn, pvaOut);
 			}
 			else
 			{
 				return VSConstants.S_OK;
 			}
 		}
+
+		#endregion
+
+		public event EventHandler CommandChanged;
 	}
 }
