@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Threading;
+using System.Windows;
+using System.Windows.Threading;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
@@ -13,18 +14,28 @@ namespace ProgressiveScroll
 {
 	class TextRenderer
 	{
-		private ITextView _textView;
-		private IOutliningManager _outliningManager;
-		private SimpleScrollBar _scrollBar;
+		private readonly ProgressiveScroll _progressiveScroll;
+		private readonly ITextView _textView;
+		private readonly IOutliningManager _outliningManager;
+
+		public DrawingVisual TextVisual { get; private set; }
+
+		private Thread _thread;
+		private bool _invalidateAgain;
+
+		// We render the text to a bitmap with a maximum height.
+		private const int MaxBitmapHeight = 2000;
+
 
 		private int _width;
+		private int _numLines;
 		private int _height;
+		private double _lineRatio;
 		private int _stride;
-		private readonly PixelFormat _pf = PixelFormats.Rgb24;
+		private readonly PixelFormat _pf = PixelFormats.Bgra32;
 		private byte[] _pixels;
 
 		public BitmapSource Bitmap { get; private set; }
-		public ColorSet Colors { get; set; }
 		public int Height { get { return _height; } }
 
 		static private Dictionary<string, byte> _keywords = new Dictionary<string, byte>
@@ -57,18 +68,82 @@ namespace ProgressiveScroll
 			MultiLine
 		};
 
-		public TextRenderer(ITextView textView, IOutliningManager outliningManager, SimpleScrollBar scrollBar)
+		public TextRenderer(ProgressiveScroll progressiveScroll, ITextView textView, IOutliningManager outliningManager)
 		{
+			_progressiveScroll = progressiveScroll;
+			TextVisual = new DrawingVisual();
+
 			_textView = textView;
 			_outliningManager = outliningManager;
-			_scrollBar = scrollBar;
-			_width = scrollBar.Width;
+			_width = Options.ScrollBarWidth;
+			_numLines = 0;
 			_height = 0;
+			_lineRatio = 1.0;
 			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
 			_pixels = null;
 		}
 
-		public void Render()
+		public void Invalidate(Parts parts)
+		{
+			if (parts.HasFlag(Parts.TextContent))
+			{
+				if (_thread == null)
+				{
+					_invalidateAgain = false;
+					_thread = new Thread(DrawLines);
+					_thread.Name = "Progressive Scroll Text Render";
+					_thread.Priority = ThreadPriority.Lowest;
+					_thread.Start();
+				}
+				else
+				{
+					// The thread is still busy rendering from the last update
+					_invalidateAgain = true;
+				}
+			}
+			else
+			if (parts.HasFlag(Parts.Text))
+			{
+				TextVisual.Dispatcher.BeginInvoke(new Action<bool>(Render), DispatcherPriority.Render, false);
+			}
+		}
+
+		private void Render(bool bitmapDirty)
+		{
+			if (bitmapDirty)
+			{
+				Bitmap = BitmapSource.Create(
+					_width,
+					_height,
+					96,
+					96,
+					_pf,
+					null,
+					_pixels,
+					_stride);
+			}
+
+			// Render the text bitmap with scaling
+			DrawingGroup drawingGroup = new DrawingGroup();
+			RenderOptions.SetBitmapScalingMode(drawingGroup, BitmapScalingMode.Fant);
+			ImageDrawing image = new ImageDrawing();
+			double textHeight = Math.Min(Height, _progressiveScroll.DrawHeight);
+			image.Rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, textHeight);
+			image.ImageSource = Bitmap;
+			drawingGroup.Children.Add(image);
+
+			using (DrawingContext drawingContext = TextVisual.RenderOpen())
+			{
+				drawingContext.DrawDrawing((Drawing)drawingGroup);
+			}
+
+			if (_invalidateAgain)
+			{
+				Invalidate(Parts.TextContent);
+			}
+		}
+
+		public void DrawLines()
 		{
 			// Find the hidden regions
 			IEnumerable<ICollapsed> collapsedRegions = new List<ICollapsed>();
@@ -100,13 +175,12 @@ namespace ProgressiveScroll
 			int highlightIndex = 0;
 
 			// Create the image buffer
-			_width = _scrollBar.Width;
+			_width = Options.ScrollBarWidth;
 			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
-			_height = _textView.VisualSnapshot.LineCount;
+			_numLines = _textView.VisualSnapshot.LineCount;
+			_height = Math.Min(_numLines, MaxBitmapHeight);
 			_pixels = new byte[_stride * _height];
-
-			// Clear the image buffer with the whitespace color
-			Clear();
+			_lineRatio = (double)(_height) / (double)(_numLines);
 
 			string text = _textView.TextBuffer.CurrentSnapshot.GetText();
 
@@ -268,19 +342,19 @@ namespace ProgressiveScroll
 					{
 						if (highlightIndex < highlights.Count && i >= highlights[highlightIndex].Start.Position)
 						{
-							SetPixel(virtualColumn, virtualLine, Colors.HighlightBrush.Color);
+							SetPixel(virtualColumn, virtualLine, _progressiveScroll.Colors.HighlightsBrush.Color);
 						}
 						else if (commentType != CommentType.None)
 						{
-							SetPixel(virtualColumn, virtualLine, Colors.CommentBrush.Color);
+							SetPixel(virtualColumn, virtualLine, _progressiveScroll.Colors.CommentsBrush.Color);
 						}
 						else if (inString)
 						{
-							SetPixel(virtualColumn, virtualLine, Colors.StringBrush.Color);
+							SetPixel(virtualColumn, virtualLine, _progressiveScroll.Colors.StringsBrush.Color);
 						}
 						else
 						{
-							SetPixel(virtualColumn, virtualLine, Colors.TextBrush.Color);
+							SetPixel(virtualColumn, virtualLine, _progressiveScroll.Colors.TextBrush.Color);
 						}
 					}
 				}
@@ -295,7 +369,7 @@ namespace ProgressiveScroll
 
 					if (isLineVisible)
 					{
-						SetPixels(virtualColumn, virtualLine, Colors.WhitespaceBrush.Color, numChars);
+						SetPixels(virtualColumn, virtualLine, _progressiveScroll.Colors.WhitespaceBrush.Color, numChars);
 					}
 				}
 
@@ -303,37 +377,21 @@ namespace ProgressiveScroll
 				virtualColumn += numChars;
 			}
 
-			Bitmap = BitmapSource.Create(
-				_width,
-				_height,
-				96,
-				96,
-				_pf,
-				null,
-				_pixels,
-				_stride);
-		}
-
-		private void Clear()
-		{
-			int numPixels = _height * _stride / (_pf.BitsPerPixel / 8);
-			Color clearColor = Colors.WhitespaceBrush.Color;
-			for (int i = 0; i < numPixels; ++i)
-			{
-				_pixels[3 * i] = clearColor.R;
-				_pixels[3 * i + 1] = clearColor.G;
-				_pixels[3 * i + 2] = clearColor.B;
-			}
+			_thread = null;
+			TextVisual.Dispatcher.BeginInvoke(new Action<bool>(Render), DispatcherPriority.Render, true);
 		}
 
 		private void SetPixel(int x, int y, Color c)
 		{
+			// Not entirely accurate, some pixels should be split between lines, but close enough
+			y = (int)(y * _lineRatio);
 			if (x < _width && y < _height)
 			{
-				int pixelOffset = y * _stride + x * 3;
-				_pixels[pixelOffset] = c.R;
-				_pixels[pixelOffset + 1] = c.G;
-				_pixels[pixelOffset + 2] = c.B;
+				int pixelOffset = y * _stride + x * 4;
+				_pixels[pixelOffset] += (byte)(_lineRatio * c.B);
+				_pixels[pixelOffset + 1] += (byte)(_lineRatio * c.G);
+				_pixels[pixelOffset + 2] += (byte)(_lineRatio * c.R);
+				_pixels[pixelOffset + 3] += (byte)(_lineRatio * 255);
 			}
 		}
 

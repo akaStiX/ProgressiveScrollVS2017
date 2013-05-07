@@ -1,12 +1,7 @@
 ﻿using System;
-using System.Diagnostics;
-using System.Globalization;
+using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
-using System.ComponentModel.Design;
-using Microsoft.Win32;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.OLE.Interop;
+using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 using System.ComponentModel;
 
@@ -29,7 +24,7 @@ namespace ProgressiveScroll
 	[ClassInterface(ClassInterfaceType.AutoDual)]
 	[CLSCompliant(false), ComVisible(true)]
 	[System.ComponentModel.DesignerCategory("")] // Prevents this file from being opened in design mode.
-	public class GeneralOptionPage : DialogPage
+	public class OptionsPage : DialogPage
 	{
 		private int _scrollBarWidth = 128;
 		private bool _renderTextEnabled = true;
@@ -105,21 +100,56 @@ namespace ProgressiveScroll
 		protected override void OnApply(PageApplyEventArgs e)
 		{
 			base.OnApply(e);
+
 			if (e.ApplyBehavior == ApplyKind.Apply)
 			{
 				// Update all ProgressiveScroll objects
-				ProgressiveScroll.SettingsChanged(this);
+
+				Options.ScrollBarWidth = _scrollBarWidth;
+				Options.RenderTextEnabled = _renderTextEnabled;
+				Options.CursorOpacity = _cursorOpacity;
+				Options.CursorBorderEnabled = _cursorBorderEnabled;
+				Options.SplitterEnabled = _splitterEnabled;
+				Options.ErrorsEnabled = _errorsEnabled;
+				Options.AltHighlight = _altHighlight;
+
+				ProgressiveScroll.SettingsChanged();
 			}
 		}
 	}
 
 	[PackageRegistration(UseManagedResourcesOnly = true)]
 	[Guid("3E81D486-9A46-458A-BB83-7655DD0E18A4")]
-	[ProvideOptionPage(typeof(GeneralOptionPage), OptionNames.PageCategoryName, OptionNames.PageName, 0, 0, true)]
-	public sealed class ProgressiveScrollOptions : Package
+	[ProvideOptionPage(typeof(OptionsPage), OptionNames.PageCategoryName, OptionNames.PageName, 0, 0, true)]
+	//Microsoft.VisualStudio.VSConstants.UICONTEXT_NoSolution
+	[ProvideAutoLoad("ADFC4E64-0397-11D1-9F4E-00A0C911004F")]
+	public sealed class Options : Package
 	{
-		public ProgressiveScrollOptions()
+		public static bool IsVS11;
+		public static int ScrollBarWidth;
+		public static bool RenderTextEnabled;
+		public static double CursorOpacity;
+		public static bool CursorBorderEnabled;
+		public static bool SplitterEnabled;
+		public static bool ErrorsEnabled;
+		public static bool AltHighlight;
+
+		protected override void Initialize()
 		{
+			base.Initialize();
+
+			DTE dte = (DTE)GetService(typeof(DTE));
+			IsVS11 = (dte.Version == "11.0");
+
+			Properties props = dte.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
+
+			ScrollBarWidth = (int)props.Item(OptionNames.ScrollBarWidth).Value;
+			RenderTextEnabled = (bool)props.Item(OptionNames.RenderTextEnabled).Value;
+			CursorOpacity = (double)props.Item(OptionNames.CursorOpacity).Value;
+			CursorBorderEnabled = (bool)props.Item(OptionNames.CursorBorderEnabled).Value;
+			SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
+			ErrorsEnabled = (bool)props.Item(OptionNames.ErrorsEnabled).Value;
+			AltHighlight = (bool)props.Item(OptionNames.AltHighlight).Value;
 		}
 	}
 }

@@ -56,7 +56,7 @@ namespace ProgressiveScroll
 					if (yBottom < y)
 					{
 						drawingContext.DrawRectangle(
-							Colors.HighlightBrush,
+							Colors.HighlightsBrush,
 							null,
 							new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 
@@ -67,7 +67,7 @@ namespace ProgressiveScroll
 				}
 
 				drawingContext.DrawRectangle(
-					Colors.HighlightBrush,
+					Colors.HighlightsBrush,
 					null,
 					new Rect(_scrollBar.Width - markerWidth, yTop, markerWidth, yBottom - yTop));
 			}

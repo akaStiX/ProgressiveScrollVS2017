@@ -37,8 +37,8 @@ namespace ProgressiveScroll
 				_textView.TextSnapshot,
 				_changeTagAggregator.GetTags(new SnapshotSpan(_textView.TextSnapshot, 0, _textView.TextSnapshot.Length)));
 
-			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], Colors.ChangedBrush);
-			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], Colors.UnsavedChangedBrush);
+			DrawChanges(drawingContext, allChanges[(int)ChangeTypes.ChangedSinceOpened], Colors.ChangesBrush);
+			DrawChanges(drawingContext, allChanges[(int)(ChangeTypes.ChangedSinceOpened | ChangeTypes.ChangedSinceSaved)], Colors.UnsavedChangesBrush);
 		}
 
 		internal static NormalizedSnapshotSpanCollection[] GetUnifiedChanges(ITextSnapshot snapshot, IEnumerable<IMappingTagSpan<ChangeTag>> tags)

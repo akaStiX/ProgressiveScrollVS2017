@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Windows.Media;
+﻿using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Utilities;
 using System.ComponentModel.Composition;
@@ -11,40 +7,60 @@ using Microsoft.VisualStudio.Text.Editor;
 
 namespace ProgressiveScroll
 {
+	public class FormatNames
+	{
+		public const string Text = "Progressive Scroll Text";
+		public const string VisibleRegion = "Progressive Scroll Visible Region";
+		public const string Comments = "Progressive Scroll Comments";
+		public const string Strings = "Progressive Scroll Strings";
+		public const string Changes = "Progressive Scroll Changes";
+		public const string UnsavedChanges = "Progressive Scroll Unsaved Changes";
+		public const string Highlights = "Progressive Scroll Highlights";
+		public const string Breakpoints = "Progressive Scroll Breakpoints";
+		public const string Bookmarks = "Progressive Scroll Bookmarks";
+		public const string Errors = "Progressive Scroll Errors";
+	}
+
+	public class ClassificationNames
+	{
+		public const string Highlights = "PSHighlightWordClassification";
+	}
+
+
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSTextFormatDefinition")]
+	[Name(FormatNames.Text)]
 	[UserVisible(true)]
 	internal class TextFormatDefinition : MarkerFormatDefinition
 	{
 		public TextFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Text";
+			DisplayName = FormatNames.Text;
 			BackgroundColor = Color.FromRgb(238, 238, 238);
 			ForegroundColor = Colors.Gray;
 		}
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSCursorFormatDefinition")]
+	[Name(FormatNames.VisibleRegion)]
 	[UserVisible(true)]
-	internal class CursorFormatDefinition : MarkerFormatDefinition
+	internal class VisibleRegionFormatDefinition : MarkerFormatDefinition
 	{
-		public CursorFormatDefinition()
+		public VisibleRegionFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Visible Region";
+			DisplayName = FormatNames.VisibleRegion;
 			BackgroundColor = Colors.Gray;
 			ForegroundColor = Colors.Black;
 		}
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSCommentFormatDefinition")]
+	[Name(FormatNames.Comments)]
 	[UserVisible(true)]
-	internal class CommentFormatDefinition : MarkerFormatDefinition
+	internal class CommentsFormatDefinition : MarkerFormatDefinition
 	{
-		public CommentFormatDefinition()
+		public CommentsFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Comments";
+			DisplayName = FormatNames.Comments;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Colors.Green;
@@ -52,13 +68,13 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSStringFormatDefinition")]
+	[Name(FormatNames.Strings)]
 	[UserVisible(true)]
-	internal class StringFormatDefinition : MarkerFormatDefinition
+	internal class StringsFormatDefinition : MarkerFormatDefinition
 	{
-		public StringFormatDefinition()
+		public StringsFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Strings";
+			DisplayName = FormatNames.Strings;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Color.FromRgb(190, 80, 80);
@@ -66,13 +82,13 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSChangesFormatDefinition")]
+	[Name(FormatNames.Changes)]
 	[UserVisible(true)]
 	internal class ChangesFormatDefinition : MarkerFormatDefinition
 	{
 		public ChangesFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Changes";
+			DisplayName = FormatNames.Changes;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Color.FromRgb(108, 226, 108);
@@ -80,13 +96,13 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSUnsavedChangesFormatDefinition")]
+	[Name(FormatNames.UnsavedChanges)]
 	[UserVisible(true)]
 	internal class UnsavedChangesFormatDefinition : MarkerFormatDefinition
 	{
 		public UnsavedChangesFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Unsaved Changes";
+			DisplayName = FormatNames.UnsavedChanges;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Color.FromRgb(255, 238, 98);
@@ -94,28 +110,28 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[ClassificationType(ClassificationTypeNames = "PSHighlightWordFormatDefinition")]
-	[Name("ClassificationFormatDefinition/PSHighlightWordFormatDefinition")]
+	[ClassificationType(ClassificationTypeNames = ClassificationNames.Highlights)]
+	[Name(FormatNames.Highlights)]
 	[UserVisible(true)]
 	[Order(After = Priority.High)]
-	public sealed class RegionForeground : ClassificationFormatDefinition
+	public sealed class HighlightsFormatDefinition : ClassificationFormatDefinition
 	{
-		public RegionForeground()
+		public HighlightsFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Highlights";
+			DisplayName = FormatNames.Highlights;
 			BackgroundColor = Colors.Orange;
 			ForegroundColor = Colors.Black;
 		}
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSBreakpointFormatDefinition")]
+	[Name(FormatNames.Breakpoints)]
 	[UserVisible(true)]
-	internal class BreakpointFormatDefinition : MarkerFormatDefinition
+	internal class BreakpointsFormatDefinition : MarkerFormatDefinition
 	{
-		public BreakpointFormatDefinition()
+		public BreakpointsFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Breakpoints";
+			DisplayName = FormatNames.Breakpoints;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Colors.Red;
@@ -123,13 +139,13 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSBookmarkFormatDefinition")]
+	[Name(FormatNames.Bookmarks)]
 	[UserVisible(true)]
-	internal class BookmarkFormatDefinition : MarkerFormatDefinition
+	internal class BookmarksFormatDefinition : MarkerFormatDefinition
 	{
-		public BookmarkFormatDefinition()
+		public BookmarksFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Bookmarks";
+			DisplayName = FormatNames.Bookmarks;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Colors.Blue;
@@ -137,13 +153,13 @@ namespace ProgressiveScroll
 	}
 
 	[Export(typeof(EditorFormatDefinition))]
-	[Name("MarkerFormatDefinition/PSErrorFormatDefinition")]
+	[Name(FormatNames.Errors)]
 	[UserVisible(true)]
-	internal class ErrorFormatDefinition : MarkerFormatDefinition
+	internal class ErrorsFormatDefinition : MarkerFormatDefinition
 	{
-		public ErrorFormatDefinition()
+		public ErrorsFormatDefinition()
 		{
-			DisplayName = "Progressive Scroll Errors";
+			DisplayName = FormatNames.Errors;
 			BackgroundColor = Colors.Black;
 			BackgroundCustomizable = false;
 			ForegroundColor = Colors.Maroon;
@@ -152,68 +168,67 @@ namespace ProgressiveScroll
 
 	class ColorSet
 	{
-		private ITextView _textView;
-		private IEditorFormatMapService _formatMapService;
+		private readonly IEditorFormatMap _formatMap;
 
 		public SolidColorBrush WhitespaceBrush { get; private set; }
 		public SolidColorBrush TextBrush { get; private set; }
-		public SolidColorBrush CommentBrush { get; private set; }
-		public SolidColorBrush StringBrush { get; private set; }
-		public SolidColorBrush VisibleBrush { get; private set; }
-		public Pen VisibleBorderPen { get; private set; }
-		public SolidColorBrush ChangedBrush { get; private set; }
-		public SolidColorBrush UnsavedChangedBrush { get; private set; }
-		public SolidColorBrush HighlightBrush { get; private set; }
-		public SolidColorBrush BreakpointBrush { get; private set; }
-		public SolidColorBrush BookmarkBrush { get; private set; }
-		public SolidColorBrush ErrorBrush { get; private set; }
+		public SolidColorBrush CommentsBrush { get; private set; }
+		public SolidColorBrush StringsBrush { get; private set; }
+		public SolidColorBrush VisibleRegionBrush { get; private set; }
+		public Pen VisibleRegionBorderPen { get; private set; }
+		public SolidColorBrush ChangesBrush { get; private set; }
+		public SolidColorBrush UnsavedChangesBrush { get; private set; }
+		public SolidColorBrush HighlightsBrush { get; private set; }
+		public SolidColorBrush BreakpointsBrush { get; private set; }
+		public SolidColorBrush BookmarksBrush { get; private set; }
+		public SolidColorBrush ErrorsBrush { get; private set; }
 
-		public double CursorOpacity { get; set; }
-
-		public ColorSet(ITextView textView, IEditorFormatMapService formatMapService, double cursorOpacity)
+		public ColorSet(IEditorFormatMap formatMap)
 		{
-			_textView = textView;
-			_formatMapService = formatMapService;
-			CursorOpacity = cursorOpacity;
-			RefreshColors();
+			_formatMap = formatMap;
+			_formatMap.FormatMappingChanged += OnFormatMappingChanged;
+			ReloadColors();
 		}
 
-		public void RefreshColors()
+		private void OnFormatMappingChanged(object sender, FormatItemsEventArgs e)
 		{
-			IEditorFormatMap formatMap = _formatMapService.GetEditorFormatMap(_textView);
+			ProgressiveScroll.SettingsChanged();
+		}
 
-			ResourceDictionary resDict = formatMap.GetProperties("MarkerFormatDefinition/PSTextFormatDefinition");
+		public void ReloadColors()
+		{
+			ResourceDictionary resDict = _formatMap.GetProperties(FormatNames.Text);
 			WhitespaceBrush = (SolidColorBrush)resDict[EditorFormatDefinition.BackgroundBrushId];
 			TextBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSCursorFormatDefinition");
+			resDict = _formatMap.GetProperties(FormatNames.VisibleRegion);
 			Color c = (Color)resDict[EditorFormatDefinition.BackgroundColorId];
-			VisibleBrush = new SolidColorBrush(Color.FromArgb((byte)(CursorOpacity * 255), c.R, c.G, c.B));
-			VisibleBorderPen = new Pen((SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId], 1.0);
+			VisibleRegionBrush = new SolidColorBrush(Color.FromArgb((byte)(Options.CursorOpacity * 255), c.R, c.G, c.B));
+			VisibleRegionBorderPen = new Pen((SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId], 1.0);
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSCommentFormatDefinition");
-			CommentBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Comments);
+			CommentsBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSStringFormatDefinition");
-			StringBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Strings);
+			StringsBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSChangesFormatDefinition");
-			ChangedBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Changes);
+			ChangesBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSUnsavedChangesFormatDefinition");
-			UnsavedChangedBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.UnsavedChanges);
+			UnsavedChangesBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("ClassificationFormatDefinition/PSHighlightWordFormatDefinition");
-			HighlightBrush = (SolidColorBrush)resDict[EditorFormatDefinition.BackgroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Highlights);
+			HighlightsBrush = (SolidColorBrush)resDict[EditorFormatDefinition.BackgroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSBreakpointFormatDefinition");
-			BreakpointBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Breakpoints);
+			BreakpointsBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSBookmarkFormatDefinition");
-			BookmarkBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Bookmarks);
+			BookmarksBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 
-			resDict = formatMap.GetProperties("MarkerFormatDefinition/PSErrorFormatDefinition");
-			ErrorBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
+			resDict = _formatMap.GetProperties(FormatNames.Errors);
+			ErrorsBrush = (SolidColorBrush)resDict[EditorFormatDefinition.ForegroundBrushId];
 		}
 	}
 }

@@ -1,17 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
-using System.Windows.Media;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
-using Microsoft.VisualStudio.Text.Formatting;
-using Microsoft.VisualStudio.Text.Outlining;
-using Microsoft.VisualStudio.Text.Projection;
-using Microsoft.VisualStudio.Utilities;
 
 namespace ProgressiveScroll
 {
@@ -27,7 +17,7 @@ namespace ProgressiveScroll
 		double _trackSpanBottom;
 		double _scale = 1.0;
 
-		public int Width { get; set; }
+		public double Width { get; set; }
 		public bool SplitterEnabled { get; set; }
 
 		private class ScrollMapWrapper : IScrollMap
@@ -118,14 +108,7 @@ namespace ProgressiveScroll
 
 		private void ResetTrackSpan()
 		{
-			double h = SplitterEnabled ? 0 : 17;
-			if (!ProgressiveScrollFactory.IsVS11)
-			{
-				h += 17.0; // can't draw on top of the empty area in VS11
-			}
-			h -= 3; // bottom margin
-
-			_scale = Math.Max(_realScrollBarMargin.VisualElement.ActualHeight + h, 0) / _textView.VisualSnapshot.LineCount;
+			_scale = Math.Max(_realScrollBarMargin.VisualElement.ActualHeight - 3, 0) / _textView.VisualSnapshot.LineCount;
 			_scale = Math.Min(_scale, 1.0);
 
 			_trackSpanTop = 0;
@@ -152,11 +135,11 @@ namespace ProgressiveScroll
 				handler(this, new EventArgs());
 		}
 
-		public SimpleScrollBar(IWpfTextView textView, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory, int width)
+		public SimpleScrollBar(IWpfTextView textView, IWpfTextViewMargin containerMargin, IScrollMapFactoryService scrollMapFactory)
 		{
 			_textView = textView;
 			_textView.LayoutChanged += OnLayoutChanged;
-			Width = width;
+			Width = Options.ScrollBarWidth;
 
 			_realScrollBarMargin = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
 
@@ -169,18 +152,18 @@ namespace ProgressiveScroll
 					_realScrollBar.TrackSpanChanged += OnScrollBarTrackSpanChanged;
 				}
 			}
-			this.ResetTrackSpan();
+			ResetTrackSpan();
 
 			_scrollMapFactory = scrollMapFactory;
-			this.ResetScrollMap();
+			ResetScrollMap();
 
-			_scrollMap.MappingChanged += delegate { this.RaiseTrackChangedEvent(); };
+			_scrollMap.MappingChanged += delegate { RaiseTrackChangedEvent(); };
 		}
 
 		void OnScrollBarIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
 		{
-			this.ResetTrackSpan();
-			this.ResetScrollMap();
+			ResetTrackSpan();
+			ResetScrollMap();
 		}
 
 		void OnScrollBarTrackSpanChanged(object sender, EventArgs e)

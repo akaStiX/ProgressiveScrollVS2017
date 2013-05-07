@@ -16,82 +16,83 @@ using Microsoft.VisualStudio.Text.Tagging;
 
 namespace ProgressiveScroll
 {
+	[System.Flags]
+	public enum Parts
+	{
+		Marks = 1,
+		Text = 2,
+		TextContent = 4,
+		All = Marks | Text | TextContent
+	}
+
 	internal class ProgressiveScroll : Canvas, IWpfTextViewMargin
 	{
 		public const string MarginName = "ProgressiveScroll";
 
-		private static readonly Dictionary<ProgressiveScroll, byte> ProgressiveScrollDict =
-			new Dictionary<ProgressiveScroll, byte>();
+		private static readonly List<ProgressiveScroll> ProgressiveScrollDict = new List<ProgressiveScroll>();
 
 		private readonly ITagAggregator<IErrorTag> _errorTagAggregator;
-		private readonly int _horizontalScrollBarHeight = 17;
 		private readonly ITagAggregator<IVsVisibleTextMarkerTag> _markerTagAggregator;
-		private readonly ProgressiveScrollView _progressiveScrollView;
 		private readonly SimpleScrollBar _scrollBar;
 		private readonly IWpfTextView _textView;
+		private IWpfTextViewMargin _containerMargin;
+
+		private DrawingVisual MarksVisual;
+		private List<Visual> Visuals = new List<Visual>();
 
 		private const int BottomMargin = 3;
 		private bool _isDisposed;
-		private int _splitterHeight = 17;
-		private IWpfTextViewHost _textViewHost;
 
 		public ProgressiveScroll(
-			IWpfTextViewHost textViewHost,
+			IWpfTextViewMargin containerMargin,
+			IWpfTextView textView,
 			IOutliningManager outliningManager,
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
 			ITagAggregator<IErrorTag> errorTagAggregator,
 			Debugger debugger,
 			SimpleScrollBar scrollBar,
-			ProgressiveScrollFactory factory)
+			ColorSet colors)
 		{
-			if (textViewHost == null)
-			{
-				throw new ArgumentNullException("textViewHost");
-			}
+			_containerMargin = containerMargin;
 
-			if (ProgressiveScrollFactory.IsVS11)
-			{
-				_horizontalScrollBarHeight = 0;
-			}
+			ProgressiveScrollDict.Add(this);
 
-			ProgressiveScrollDict.Add(this, 0);
-
-			_textViewHost = textViewHost;
-			_textView = textViewHost.TextView;
+			Colors = colors;
+			_textView = textView;
 			_scrollBar = scrollBar;
 			_markerTagAggregator = markerTagAggregator;
 			_errorTagAggregator = errorTagAggregator;
 
-			Background = Brushes.Transparent;
-
-			Width = scrollBar.Width;
-
-			_progressiveScrollView = new ProgressiveScrollView(
-				textViewHost.TextView,
-				outliningManager,
-				changeTagAggregator,
-				markerTagAggregator,
-				errorTagAggregator,
-				debugger,
-				scrollBar,
-				this);
-
 			RegisterEvents();
+			InitSettings();
+
+			_textRenderer = new TextRenderer(this, _textView, outliningManager);
+			if (Options.RenderTextEnabled)
+			{
+				Visuals.Add(_textRenderer.TextVisual);
+			}
+
+			MarksVisual = new DrawingVisual();
+			Visuals.Add(MarksVisual);
+
+			_changeRenderer = new ChangeRenderer(_textView, changeTagAggregator, scrollBar);
+			_highlightRenderer = new HighlightRenderer(_textView, scrollBar);
+			_markerRenderer = new MarkerRenderer(_textView, markerTagAggregator, errorTagAggregator, debugger, scrollBar);
+
+			foreach (var visual in Visuals)
+			{
+				AddVisualChild(visual);
+			}
 		}
 
 		public ColorSet Colors { get; set; }
-
-		public ProgressiveScrollView ScrollView
-		{
-			get { return _progressiveScrollView; }
-		}
 
 		public IEditorFormatMapService FormatMapService { get; set; }
 
 		public double ClipHeight
 		{
-			get { return ActualHeight + _splitterHeight + _horizontalScrollBarHeight; }
+			get { return ActualHeight; }
 		}
 
 		public double DrawHeight
@@ -99,39 +100,33 @@ namespace ProgressiveScroll
 			get { return Math.Max(ClipHeight - BottomMargin, 0); }
 		}
 
-		public bool SplitterEnabled
-		{
-			get { return _splitterHeight == 0; }
-			set { _splitterHeight = value ? 0 : 17; }
-		}
+		private TextRenderer _textRenderer;
+		private ChangeRenderer _changeRenderer;
+		private HighlightRenderer _highlightRenderer;
+		private MarkerRenderer _markerRenderer;
+		public MarkerRenderer MarkerRenderer { get { return _markerRenderer; } }
+
 
 		#region IWpfTextViewMargin Members
 
 		public FrameworkElement VisualElement
 		{
-			get
-			{
-				ThrowIfDisposed();
-				return this;
-			}
+			get { return this; }
+		}
+
+		protected override int VisualChildrenCount
+		{
+			get { return Visuals.Count; }
 		}
 
 		public double MarginSize
 		{
-			get
-			{
-				ThrowIfDisposed();
-				return ActualWidth;
-			}
+			get { return ActualWidth; }
 		}
 
 		public bool Enabled
 		{
-			get
-			{
-				ThrowIfDisposed();
-				return true;
-			}
+			get { return true; }
 		}
 
 		public ITextViewMargin GetTextViewMargin(string marginName)
@@ -152,83 +147,119 @@ namespace ProgressiveScroll
 
 		#endregion
 
-		public static void SettingsChanged(GeneralOptionPage options)
+		protected override Visual GetVisualChild(int index)
 		{
-			foreach (var kv in ProgressiveScrollDict)
+			if (index >= 0 || index < Visuals.Count)
+				return Visuals[index];
+
+			throw new ArgumentOutOfRangeException("index");
+		}
+
+		public static void SettingsChanged()
+		{
+			foreach (var progressiveScroll in ProgressiveScrollDict)
 			{
-				kv.Key.UpdateSettings(options);
+				progressiveScroll.UpdateSettings();
+				progressiveScroll.Invalidate(Parts.All);
 			}
 		}
 
-		internal void UpdateSettings(GeneralOptionPage options)
+		private void InitSettings()
 		{
-			Colors.CursorOpacity = options.CursorOpacity;
-			Colors.RefreshColors();
-			int newWidth = options.ScrollBarWidth;
-			_scrollBar.Width = newWidth;
-			Width = newWidth;
-			SplitterEnabled = options.SplitterEnabled;
-			_scrollBar.SplitterEnabled = options.SplitterEnabled;
+			ClipToBounds = true;
+			Colors.ReloadColors();
 
-			_progressiveScrollView.CursorBorderEnabled = options.CursorBorderEnabled;
-			_progressiveScrollView.RenderTextEnabled = options.RenderTextEnabled;
-			_progressiveScrollView.MarkerRenderer.ErrorsEnabled = options.ErrorsEnabled;
-			_progressiveScrollView.TextDirty = true;
+			Background = Colors.WhitespaceBrush;
 
-			WordSelectionCommandFilter.AltHighlight = options.AltHighlight;
+			_containerMargin.VisualElement.Margin =
+				new Thickness(
+					0.0,
+					Options.SplitterEnabled ? 0.0 : -17.0,
+					0.0,
+					Options.IsVS11 ? 0.0 : -17.0);
 
-			InvalidateAsync();
+			Width = Options.ScrollBarWidth;
+			_scrollBar.Width = Width;
 		}
 
-		private void ThrowIfDisposed()
+		private void UpdateSettings()
 		{
-			if (_isDisposed)
-				throw new ObjectDisposedException(MarginName);
+			Colors.ReloadColors();
+
+			Background = Colors.WhitespaceBrush;
+
+			_containerMargin.VisualElement.Margin =
+				new Thickness(
+					0.0,
+					Options.SplitterEnabled ? 0.0 : -17.0,
+					0.0,
+					Options.IsVS11 ? 0.0 : -17.0);
+
+			Width = Options.ScrollBarWidth;
+			_scrollBar.Width = Width;
+
+			// Hide/Show TextVisual
+			if (Options.RenderTextEnabled && !Visuals.Contains(_textRenderer.TextVisual))
+			{
+				Visuals.Insert(0, _textRenderer.TextVisual);
+				AddVisualChild(_textRenderer.TextVisual);
+			}
+			else
+			if (!Options.RenderTextEnabled && Visuals.Contains(_textRenderer.TextVisual))
+			{
+				RemoveVisualChild(_textRenderer.TextVisual);
+				Visuals.Remove(_textRenderer.TextVisual);
+			}
 		}
 
 		private void RegisterEvents()
 		{
-			_textView.LayoutChanged += OnTextChanged;
-			_scrollBar.TrackSpanChanged += OnViewChanged;
+			Loaded += OnLoaded;
+			SizeChanged += OnSizeChanged;
+			_textView.LayoutChanged += OnTextViewLayoutChanged;
 			_markerTagAggregator.TagsChanged += OnTagsChanged;
 			_errorTagAggregator.TagsChanged += OnTagsChanged;
 			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
 			{
-				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnTextChanged;
+				HighlightWordTaggerProvider.Taggers[_textView].TagsChanged += OnHighlightChanged;
 			}
 
 			MouseLeftButtonDown += OnMouseLeftButtonDown;
 			MouseMove += OnMouseMove;
 			MouseLeftButtonUp += OnMouseLeftButtonUp;
+			MouseRightButtonDown += OnMouseRightButtonDown;
 		}
 
-		private void OnTextChanged(object sender, EventArgs e)
+		private void OnLoaded(object sender, RoutedEventArgs e)
 		{
-			_progressiveScrollView.TextDirty = true;
-			InvalidateAsync();
+			Invalidate(Parts.All);
 		}
 
-		private void OnViewChanged(object sender, EventArgs e)
+		private void OnSizeChanged(object sender, SizeChangedEventArgs e)
 		{
-			InvalidateAsync();
+			Invalidate(Parts.Marks | Parts.Text);
+		}
+
+		private void OnTextViewLayoutChanged(object sender, TextViewLayoutChangedEventArgs e)
+		{
+			Parts parts = 0;
+			if (e.NewViewState.EditSnapshot != e.OldViewState.EditSnapshot ||
+				e.NewViewState.VisualSnapshot != e.OldViewState.VisualSnapshot)
+			{
+				parts |= Parts.TextContent;
+			}
+
+			Invalidate(parts);
 		}
 
 		private void OnTagsChanged(object sender, EventArgs e)
 		{
-			InvalidateAsync();
+			Invalidate(Parts.Marks);
 		}
 
-		private void InvalidateAsync()
+		private void OnHighlightChanged(object sender, EventArgs e)
 		{
-			try
-			{
-				Dispatcher.BeginInvoke(
-					DispatcherPriority.Normal,
-					new Action(() => InvalidateVisual()));
-			}
-			catch (Exception)
-			{
-			}
+			Invalidate(Parts.All);
 		}
 
 		private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -253,34 +284,65 @@ namespace ProgressiveScroll
 			ReleaseMouseCapture();
 		}
 
-		protected override void OnRender(DrawingContext drawingContext)
+		private void OnMouseRightButtonDown(object sender, MouseButtonEventArgs e)
 		{
-			base.OnRender(drawingContext);
-
-			// Don't bother drawing if we have no content or no area to draw in (implying there are no children)
-			if (ActualWidth > 0.0)
+			if (HighlightWordTaggerProvider.Taggers.ContainsKey(_textView))
 			{
-				Colors.RefreshColors();
-
-				drawingContext.PushTransform(new TranslateTransform(0.0, -_splitterHeight));
-				var viewRect = new Rect(0, 0, ActualWidth, ClipHeight);
-				drawingContext.PushClip(new RectangleGeometry(viewRect));
-				drawingContext.DrawRectangle(
-					Colors.WhitespaceBrush,
-					null,
-					viewRect);
-
-				VisualBitmapScalingMode = BitmapScalingMode.Fant;
-
-				_progressiveScrollView.Render(drawingContext);
-
-				drawingContext.Pop();
+				HighlightWordTaggerProvider.Taggers[_textView].Clear();
 			}
 		}
 
-		internal void ScrollViewToYCoordinate(double y)
+		private void Invalidate(Parts parts)
 		{
-			y = y + _splitterHeight;
+			// Not visible anyway
+			if (ActualWidth <= 0.0)
+			{
+				return;
+			}
+
+			if (Options.RenderTextEnabled)
+			{
+				_textRenderer.Invalidate(parts);
+			}
+
+			MarksVisual.Dispatcher.BeginInvoke(new Action(RenderMarks), DispatcherPriority.Render);
+		}
+
+		private void RenderMarks()
+		{
+			if (_textView.IsClosed)
+			{
+				return;
+			}
+
+			using (DrawingContext drawingContext = MarksVisual.RenderOpen())
+			{
+				// Render viewport
+				double textHeight = Math.Min(_textRenderer.Height, DrawHeight);
+				int viewportHeight = Math.Max((int)((_textView.ViewportHeight / _textView.LineHeight) * (textHeight / _textRenderer.Height)), 5);
+				int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
+
+				drawingContext.DrawRectangle(Colors.VisibleRegionBrush, null, new Rect(0.0, firstLine, ActualWidth, viewportHeight));
+
+				// Render various marks
+				_changeRenderer.Colors = Colors;
+				_changeRenderer.Render(drawingContext);
+
+				_highlightRenderer.Colors = Colors;
+				_highlightRenderer.Render(drawingContext);
+
+				_markerRenderer.Colors = Colors;
+				_markerRenderer.Render(drawingContext);
+
+				if (Options.CursorBorderEnabled)
+				{
+					drawingContext.DrawRectangle(null, Colors.VisibleRegionBorderPen, new Rect(0.5, firstLine + 0.5, ActualWidth - 1.0, viewportHeight - 1.0));
+				}
+			}
+		}
+
+		private void ScrollViewToYCoordinate(double y)
+		{
 			double yLastLine = _scrollBar.TrackSpanBottom;
 
 			if (y < yLastLine)

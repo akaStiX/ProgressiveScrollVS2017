@@ -47,8 +47,6 @@ namespace ProgressiveScroll
 			SimpleScrollBar scrollBar,
 			ProgressiveScroll progressiveScroll)
 		{
-			_textView = textView;
-			_scrollBar = scrollBar;
 			_progressiveScroll = progressiveScroll;
 
 			_textRenderer = new TextRenderer(textView, outliningManager, scrollBar);
@@ -59,54 +57,5 @@ namespace ProgressiveScroll
 			TextDirty = true;
 		}
 
-		public void Dispose()
-		{
-		}
-
-		public void Render(DrawingContext drawingContext)
-		{
-			if (!this._textView.IsClosed)
-			{
-				// Update the color set with the one from the parent class.
-				_colorSet = _progressiveScroll.Colors;
-
-				// Update text bitmap if necessary
-				if (TextDirty)
-				{
-					_textRenderer.Colors = _colorSet;
-					_textRenderer.Render();
-					TextDirty = false;
-				}
-
-				// Render the text bitmap with scaling
-				double textHeight = Math.Min(_textRenderer.Height, _progressiveScroll.DrawHeight);
-				if (RenderTextEnabled)
-				{
-					Rect rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, textHeight);
-					drawingContext.DrawImage(_textRenderer.Bitmap, rect);
-				}
-
-				// Render viewport
-				int viewportHeight = Math.Max((int)((_textView.ViewportHeight / _textView.LineHeight) * (textHeight / _textRenderer.Height)), 5);
-				int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
-
-				drawingContext.DrawRectangle(_colorSet.VisibleBrush, null, new Rect(0.0, firstLine, _progressiveScroll.ActualWidth, viewportHeight));
-
-				// Render various marks
-				_changeRenderer.Colors = _colorSet;
-				_changeRenderer.Render(drawingContext);
-
-				_highlightRenderer.Colors = _colorSet;
-				_highlightRenderer.Render(drawingContext);
-
-				_markerRenderer.Colors = _colorSet;
-				_markerRenderer.Render(drawingContext);
-
-				if (CursorBorderEnabled)
-				{
-					drawingContext.DrawRectangle(null, _colorSet.VisibleBorderPen, new Rect(0.5, firstLine + 0.5, _progressiveScroll.ActualWidth - 1.0, viewportHeight - 1.0));
-				}
-			}
-		}
 	}
 }

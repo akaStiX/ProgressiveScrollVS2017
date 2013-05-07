@@ -1,4 +1,7 @@
-﻿namespace ProgressiveScroll
+﻿using System.Windows;
+using Microsoft.VisualStudio.Text.Operations;
+
+namespace ProgressiveScroll
 {
 	using System.ComponentModel.Composition;
 	using Microsoft.VisualStudio.Text.Editor;
@@ -48,8 +51,6 @@
 			ServiceProvider = serviceProvider;
 		}
 
-		public static bool IsVS11 { get; set; }
-
 		public static readonly List<string> RejectedRoles = new List<string>() { "DIFF", "VSMERGEDEFAULT" };
 
 		public IWpfTextViewMargin CreateMargin(IWpfTextViewHost textViewHost, IWpfTextViewMargin containerMargin)
@@ -59,44 +60,35 @@
 				return null;
 			}
 
-			// Get the width from the options
-			DTE dte = (DTE)ServiceProvider.GetService(typeof(DTE));
-			IsVS11 = (dte.Version == "11.0");
-			EnvDTE.Properties props =
-				dte.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
-
-			EnvDTE.Debugger debugger = (EnvDTE.Debugger)dte.Debugger;
-
-			int width = (int)props.Item(OptionNames.ScrollBarWidth).Value;
-			double cursorOpacity = (double)props.Item(OptionNames.CursorOpacity).Value;
+			// HACK: Find out if this is VS 11
+			DTE dte = (DTE) ServiceProvider.GetService(typeof (DTE));
 
 			// Hide the real scroll bar
-			IWpfTextViewMargin realScrollBar = containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
-			realScrollBar.VisualElement.MinWidth = 0.0;
-			realScrollBar.VisualElement.Width = 0.0;
+			IWpfTextViewMargin realScrollBar =
+				containerMargin.GetTextViewMargin(PredefinedMarginNames.VerticalScrollBar) as IWpfTextViewMargin;
+			if (realScrollBar != null)
+			{
+				realScrollBar.VisualElement.MinWidth = 0.0;
+				realScrollBar.VisualElement.Width = 0.0;
+			}
+
+			IWpfTextView textView = textViewHost.TextView;
 
 			SimpleScrollBar scrollBar = new SimpleScrollBar(
-				textViewHost.TextView,
+				textView,
 				containerMargin,
-				_scrollMapFactory,
-				width);
+				_scrollMapFactory);
 
 			ProgressiveScroll progressiveScroll = new ProgressiveScroll(
-				textViewHost,
-				_outliningManagerService.GetOutliningManager(textViewHost.TextView),
-				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textViewHost.TextView),
-				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textViewHost.TextView),
-				_tagAggregatorFactoryService.CreateTagAggregator<IErrorTag>(textViewHost.TextView),
-				debugger,
+				containerMargin,
+				textView,
+				_outliningManagerService.GetOutliningManager(textView),
+				_tagAggregatorFactoryService.CreateTagAggregator<ChangeTag>(textView),
+				_tagAggregatorFactoryService.CreateTagAggregator<IVsVisibleTextMarkerTag>(textView),
+				_tagAggregatorFactoryService.CreateTagAggregator<IErrorTag>(textView),
+				dte.Debugger,
 				scrollBar,
-				this);
-
-			progressiveScroll.Colors = new ColorSet(textViewHost.TextView, FormatMapService, cursorOpacity);
-			progressiveScroll.ScrollView.RenderTextEnabled = (bool)props.Item(OptionNames.RenderTextEnabled).Value;
-			progressiveScroll.ScrollView.CursorBorderEnabled = (bool)props.Item(OptionNames.CursorBorderEnabled).Value;
-			progressiveScroll.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
-			scrollBar.SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
-			progressiveScroll.ScrollView.MarkerRenderer.ErrorsEnabled = (bool)props.Item(OptionNames.ErrorsEnabled).Value;
+				new ColorSet(FormatMapService.GetEditorFormatMap(textView)));
 
 			return progressiveScroll;
 		}

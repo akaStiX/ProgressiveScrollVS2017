@@ -33,7 +33,7 @@ namespace ProgressiveScroll
 		public IClassificationTypeRegistryService Registry { get; set; }
 
 
-
+		// HACK: Keeps track of all the HighlightWordTaggers
 		private static readonly Dictionary<ITextView, HighlightWordTagger> _taggers =
 			new Dictionary<ITextView, HighlightWordTagger>();
 
@@ -60,7 +60,7 @@ namespace ProgressiveScroll
 			ITextStructureNavigator textStructureNavigator =
 				TextStructureNavigatorSelector.GetTextStructureNavigator(buffer);
 
-			IClassificationType classificationType = Registry.GetClassificationType("PSHighlightWordFormatDefinition");
+			IClassificationType classificationType = Registry.GetClassificationType(ClassificationNames.Highlights);
 
 			var tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator, classificationType);
 			Taggers[textView] = tagger;
@@ -73,30 +73,27 @@ namespace ProgressiveScroll
 
 		public void VsTextViewCreated(IVsTextView textViewAdapter)
 		{
-			IWpfTextView textView = EditorFactory.GetWpfTextView(textViewAdapter);
-			if (textView == null)
-				return;
-
-			var commandFilter = new WordSelectionCommandFilter(textView);
-			Taggers[textView].CommandFilter = commandFilter;
-
-			IOleCommandTarget next;
-
 			if (textViewAdapter == null)
 				return;
 
-			int hr = textViewAdapter.AddCommandFilter(commandFilter, out next);
+			IWpfTextView textView = EditorFactory.GetWpfTextView(textViewAdapter);
 
-			if (hr != VSConstants.S_OK)
+			if (textView == null)
 				return;
 
-			commandFilter._added = true;
+			HighlightWordCommand command = new HighlightWordCommand(textView);
 
-			//you'll need the next target for Exec and QueryStatus
-			if (next != null)
+			IOleCommandTarget nextTarget;
+			int hr = textViewAdapter.AddCommandFilter(command, out nextTarget);
+
+			// next target is needed for Exec and QueryStatus
+			if (hr == VSConstants.S_OK &&
+				nextTarget != null)
 			{
-				commandFilter._nextTarget = next;
+				command.NextTarget = nextTarget;
 			}
+
+			Taggers[textView].Command = command;
 		}
 
 		#endregion

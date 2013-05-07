@@ -1,14 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Media;
 using Microsoft.VisualStudio.Text.Tagging;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text;
 using System.Windows;
-using System.IO;
 
 namespace ProgressiveScroll
 {
@@ -22,14 +19,18 @@ namespace ProgressiveScroll
 		private string _filename;
 
 		public ColorSet Colors { get; set; }
-		public bool ErrorsEnabled { get; set; }
 
 		private static readonly int markerStartOffset = -3;
 		private static readonly int markerEndOffset = 2;
 
 		private static int _bookmarkType = 3;
 
-		public MarkerRenderer(ITextView textView, ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator, ITagAggregator<IErrorTag> errorTagAggregator, EnvDTE.Debugger debugger, SimpleScrollBar scrollBar)
+		public MarkerRenderer(
+			ITextView textView,
+			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
+			ITagAggregator<IErrorTag> errorTagAggregator,
+			EnvDTE.Debugger debugger,
+			SimpleScrollBar scrollBar)
 		{
 			_textView = textView;
 			_markerTagAggregator = markerTagAggregator;
@@ -53,15 +54,15 @@ namespace ProgressiveScroll
 		public void Render(DrawingContext drawingContext)
 		{
 			NormalizedSnapshotSpanCollection bookmarks = GetBookmarks();
-			DrawMarkers(drawingContext, bookmarks, Colors.BookmarkBrush, 5);
+			DrawMarkers(drawingContext, bookmarks, Colors.BookmarksBrush, 5);
 
 			NormalizedSnapshotSpanCollection breakpoints = GetBreakpoints();
-			DrawMarkers(drawingContext, breakpoints, Colors.BreakpointBrush, 5);
+			DrawMarkers(drawingContext, breakpoints, Colors.BreakpointsBrush, 5);
 
-			if (ErrorsEnabled)
+			if (Options.ErrorsEnabled)
 			{
 				NormalizedSnapshotSpanCollection errors = GetErrors();
-				DrawMarkers(drawingContext, errors, Colors.ErrorBrush, 3);
+				DrawMarkers(drawingContext, errors, Colors.ErrorsBrush, 3);
 			}
 		}
 
