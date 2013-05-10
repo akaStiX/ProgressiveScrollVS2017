@@ -42,8 +42,6 @@ namespace ProgressiveScroll
 			get { return _taggers; }
 		}
 
-		#region IViewTaggerProvider Members
-
 		public ITagger<T> CreateTagger<T>(ITextView textView, ITextBuffer buffer) where T : ITag
 		{
 			// Provide highlighting only on the top buffer
@@ -66,10 +64,6 @@ namespace ProgressiveScroll
 			Taggers[textView] = tagger;
 			return tagger as ITagger<T>;
 		}
-
-		#endregion
-
-		#region IVsTextViewCreationListener Members
 
 		public void VsTextViewCreated(IVsTextView textViewAdapter)
 		{
@@ -95,7 +89,5 @@ namespace ProgressiveScroll
 
 			Taggers[textView].Command = command;
 		}
-
-		#endregion
 	}
 }

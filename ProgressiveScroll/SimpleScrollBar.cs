@@ -18,7 +18,6 @@ namespace ProgressiveScroll
 		double _scale = 1.0;
 
 		public double Width { get; set; }
-		public bool SplitterEnabled { get; set; }
 
 		private class ScrollMapWrapper : IScrollMap
 		{
@@ -184,7 +183,6 @@ namespace ProgressiveScroll
 			}
 		}
 
-		#region IVerticalScrollBar Members
 		public IScrollMap Map
 		{
 			get { return _scrollMap; }
@@ -233,6 +231,5 @@ namespace ProgressiveScroll
 		}
 
 		public event EventHandler TrackSpanChanged;
-		#endregion
 	}
 }
