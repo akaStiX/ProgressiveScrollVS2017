@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
+using System.Windows.Input;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using Microsoft.VisualStudio.Text.Editor;
@@ -14,23 +16,24 @@ namespace ProgressiveScroll
 		private readonly object _updateLock = new object();
 
 		public HighlightWordTagger(
-			ITextView view,
+			IWpfTextView view,
 			ITextBuffer sourceBuffer,
 			ITextSearchService textSearchService,
 			ITextStructureNavigator textStructureNavigator,
 			IClassificationType classificationType)
 		{
 			View = view;
+			View.VisualElement.MouseLeftButtonDown += OnLeftMouseButtonDown;
+			View.VisualElement.KeyUp += OnKeyUp;
 			SourceBuffer = sourceBuffer;
 			TextSearchService = textSearchService;
 			TextStructureNavigator = textStructureNavigator;
 			ClassificationType = classificationType;
 			WordSpans = new NormalizedSnapshotSpanCollection();
 			CurrentWord = null;
-			View.Selection.SelectionChanged += SelectionChanged;
 		}
 
-		private ITextView View { get; set; }
+		private IWpfTextView View { get; set; }
 		private ITextBuffer SourceBuffer { get; set; }
 		private ITextSearchService TextSearchService { get; set; }
 		private ITextStructureNavigator TextStructureNavigator { get; set; }
@@ -38,23 +41,6 @@ namespace ProgressiveScroll
 		private NormalizedSnapshotSpanCollection WordSpans { get; set; }
 		private SnapshotSpan? CurrentWord { get; set; }
 		private SnapshotPoint RequestedPoint { get; set; }
-
-		private HighlightWordCommand _command;
-
-		public HighlightWordCommand Command
-		{
-			get { return _command; }
-			set
-			{
-				if (_command != null)
-				{
-					_command.CommandChanged -= SelectionChanged;
-				}
-
-				_command = value;
-				_command.CommandChanged += SelectionChanged;
-			}
-		}
 
 		#region ITagger<HighlightWordTag> Members
 
@@ -97,26 +83,34 @@ namespace ProgressiveScroll
 
 		#endregion
 
-		public void Clear()
+		private void OnLeftMouseButtonDown(object sender, RoutedEventArgs e)
 		{
-			RequestedPoint = new SnapshotPoint();
-			SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), new SnapshotSpan?());
+			if (Options.AltHighlight && (Keyboard.PrimaryDevice.Modifiers & ModifierKeys.Alt) != ModifierKeys.Alt)
+				return;
+
+			// Double click
+			if ((e as MouseButtonEventArgs).ClickCount == 2)
+			{
+				UpdateSelection(View.Caret.Position);
+			}
 		}
 
-		private void SelectionChanged(object sender, EventArgs e)
+		private void OnKeyUp(object sender, RoutedEventArgs e)
 		{
-			if (Command != null)
+			if ((e as KeyEventArgs).Key == Key.Escape)
 			{
-				if (Command.Selected)
-				{
-					UpdateSelection(View.Caret.Position);
-				}
-				else
-				if (Command.Unselected)
-				{
-					SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), null);
-				}
+				Clear();
 			}
+		}
+
+		public void Clear()
+		{
+			// Check if there's anything to clear
+			if (!CurrentWord.HasValue)
+				return;
+
+			RequestedPoint = new SnapshotPoint();
+			SynchronousUpdate(RequestedPoint, new NormalizedSnapshotSpanCollection(), new SnapshotSpan?());
 		}
 
 		private void UpdateSelection(CaretPosition caretPosition)

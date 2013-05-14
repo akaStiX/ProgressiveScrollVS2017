@@ -18,11 +18,8 @@ namespace ProgressiveScroll
 	[ContentType("code")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]
 	[TagType(typeof (ClassificationTag))]
-	internal class HighlightWordTaggerProvider : IViewTaggerProvider, IVsTextViewCreationListener
+	internal class HighlightWordTaggerProvider : IViewTaggerProvider
 	{
-		[Import(typeof (IVsEditorAdaptersFactoryService))]
-		internal IVsEditorAdaptersFactoryService EditorFactory = null;
-
 		[Import]
 		internal ITextSearchService TextSearchService { get; set; }
 
@@ -60,34 +57,9 @@ namespace ProgressiveScroll
 
 			IClassificationType classificationType = Registry.GetClassificationType(ClassificationNames.Highlights);
 
-			var tagger = new HighlightWordTagger(textView, buffer, TextSearchService, textStructureNavigator, classificationType);
+			var tagger = new HighlightWordTagger(textView as IWpfTextView, buffer, TextSearchService, textStructureNavigator, classificationType);
 			Taggers[textView] = tagger;
 			return tagger as ITagger<T>;
-		}
-
-		public void VsTextViewCreated(IVsTextView textViewAdapter)
-		{
-			if (textViewAdapter == null)
-				return;
-
-			IWpfTextView textView = EditorFactory.GetWpfTextView(textViewAdapter);
-
-			if (textView == null)
-				return;
-
-			HighlightWordCommand command = new HighlightWordCommand(textView);
-
-			IOleCommandTarget nextTarget;
-			int hr = textViewAdapter.AddCommandFilter(command, out nextTarget);
-
-			// next target is needed for Exec and QueryStatus
-			if (hr == VSConstants.S_OK &&
-				nextTarget != null)
-			{
-				command.NextTarget = nextTarget;
-			}
-
-			Taggers[textView].Command = command;
 		}
 	}
 }

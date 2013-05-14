@@ -3,7 +3,7 @@
   <Identifier Id="ProgressiveScroll..1b4c078b-4b80-4cf3-80af-44b9088f8d8f">
 	<Name>ProgressiveScroll</Name>
 	<Author>Xeeb.net</Author>
-	<Version>0.7</Version>
+	<Version>0.7.1</Version>
 	<Description xml:space="preserve">Progressive Scroll, a MetalScroll clone that works in VS2010 and VS2012.</Description>
 	<Locale>1033</Locale>
 	<SupportedProducts>
