@@ -22,6 +22,7 @@ namespace ProgressiveScroll
 
 		private Thread _thread;
 		private bool _invalidateAgain;
+		private bool _finishedDrawing;
 
 		// We render the text to a bitmap with a maximum height.
 		private const int MaxBitmapHeight = 2000;
@@ -90,7 +91,8 @@ namespace ProgressiveScroll
 				if (_thread == null)
 				{
 					_invalidateAgain = false;
-					_thread = new Thread(DrawLines);
+					_finishedDrawing = false;
+					_thread = new Thread(RenderAsync);
 					_thread.Name = "Progressive Scroll Text Render";
 					_thread.Priority = ThreadPriority.Lowest;
 					_thread.Start();
@@ -104,7 +106,11 @@ namespace ProgressiveScroll
 			else
 			if (parts.HasFlag(Parts.Text))
 			{
-				TextVisual.Dispatcher.BeginInvoke(new Action<bool>(Render), DispatcherPriority.Render, false);
+				// If there's a background thread and it's still drawing, Render will be called anyway.
+				if (_thread == null || _finishedDrawing)
+				{
+					TextVisual.Dispatcher.Invoke(new Action<bool>(Render), DispatcherPriority.Render, false);
+				}
 			}
 		}
 
@@ -125,7 +131,7 @@ namespace ProgressiveScroll
 
 			// Render the text bitmap with scaling
 			DrawingGroup drawingGroup = new DrawingGroup();
-			RenderOptions.SetBitmapScalingMode(drawingGroup, BitmapScalingMode.Fant);
+			RenderOptions.SetBitmapScalingMode(drawingGroup, BitmapScalingMode.HighQuality);
 			ImageDrawing image = new ImageDrawing();
 			double textHeight = Math.Min(Height, _progressiveScroll.DrawHeight);
 			image.Rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, textHeight);
@@ -141,6 +147,25 @@ namespace ProgressiveScroll
 			{
 				Invalidate(Parts.TextContent);
 			}
+		}
+
+		public void RenderAsync()
+		{
+			try
+			{
+				DrawLines();
+
+				_finishedDrawing = true;
+
+				// We call Render synchronously so we don't update pixels before it's done updating the bitmap
+				TextVisual.Dispatcher.Invoke(new Action<bool>(Render), DispatcherPriority.Render, true);
+			}
+			catch (Exception)
+			{
+				// Something went wrong, possibly the textview was disposed of.
+			}
+
+			_thread = null;
 		}
 
 		public void DrawLines()
@@ -376,9 +401,6 @@ namespace ProgressiveScroll
 				++realColumn;
 				virtualColumn += numChars;
 			}
-
-			_thread = null;
-			TextVisual.Dispatcher.BeginInvoke(new Action<bool>(Render), DispatcherPriority.Render, true);
 		}
 
 		private void SetPixel(int x, int y, Color c)

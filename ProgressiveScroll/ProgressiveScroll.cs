@@ -315,29 +315,36 @@ namespace ProgressiveScroll
 				return;
 			}
 
-			using (DrawingContext drawingContext = MarksVisual.RenderOpen())
+			try
 			{
-				// Render viewport
-				double textHeight = Math.Min(_textRenderer.Height, DrawHeight);
-				int viewportHeight = Math.Max((int)((_textView.ViewportHeight / _textView.LineHeight) * (textHeight / _textRenderer.Height)), 5);
-				int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
-
-				drawingContext.DrawRectangle(Colors.VisibleRegionBrush, null, new Rect(0.0, firstLine, ActualWidth, viewportHeight));
-
-				// Render various marks
-				_changeRenderer.Colors = Colors;
-				_changeRenderer.Render(drawingContext);
-
-				_highlightRenderer.Colors = Colors;
-				_highlightRenderer.Render(drawingContext);
-
-				_markerRenderer.Colors = Colors;
-				_markerRenderer.Render(drawingContext);
-
-				if (Options.CursorBorderEnabled)
+				using (DrawingContext drawingContext = MarksVisual.RenderOpen())
 				{
-					drawingContext.DrawRectangle(null, Colors.VisibleRegionBorderPen, new Rect(0.5, firstLine + 0.5, ActualWidth - 1.0, viewportHeight - 1.0));
+					// Render viewport
+					double textHeight = Math.Min(_textRenderer.Height, DrawHeight);
+					int viewportHeight = Math.Max((int)((_textView.ViewportHeight / _textView.LineHeight) * (textHeight / _textRenderer.Height)), 5);
+					int firstLine = (int)_scrollBar.GetYCoordinateOfBufferPosition(new SnapshotPoint(_textView.TextViewLines.FirstVisibleLine.Snapshot, _textView.TextViewLines.FirstVisibleLine.Start));
+
+					drawingContext.DrawRectangle(Colors.VisibleRegionBrush, null, new Rect(0.0, firstLine, ActualWidth, viewportHeight));
+
+					// Render various marks
+					_changeRenderer.Colors = Colors;
+					_changeRenderer.Render(drawingContext);
+
+					_highlightRenderer.Colors = Colors;
+					_highlightRenderer.Render(drawingContext);
+
+					_markerRenderer.Colors = Colors;
+					_markerRenderer.Render(drawingContext);
+
+					if (Options.CursorBorderEnabled)
+					{
+						drawingContext.DrawRectangle(null, Colors.VisibleRegionBorderPen, new Rect(0.5, firstLine + 0.5, ActualWidth - 1.0, viewportHeight - 1.0));
+					}
 				}
+			}
+			catch (Exception)
+			{
+				// Just in case.
 			}
 		}
 
