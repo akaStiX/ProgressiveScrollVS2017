@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
+using System.Diagnostics;
 using EnvDTE;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Text;
@@ -50,7 +51,7 @@ namespace ProgressiveScroll
 			ITagAggregator<ChangeTag> changeTagAggregator,
 			ITagAggregator<IVsVisibleTextMarkerTag> markerTagAggregator,
 			ITagAggregator<IErrorTag> errorTagAggregator,
-			Debugger debugger,
+			EnvDTE.Debugger debugger,
 			SimpleScrollBar scrollBar,
 			ColorSet colors)
 		{
@@ -295,7 +296,7 @@ namespace ProgressiveScroll
 		private void Invalidate(Parts parts)
 		{
 			// Not visible anyway
-			if (ActualWidth <= 0.0)
+			if (ActualWidth <= 0.0 || ActualHeight <= 0)
 			{
 				return;
 			}

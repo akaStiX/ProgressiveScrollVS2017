@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Windows;
 using System.Windows.Threading;
+using System.Diagnostics;
 using Microsoft.VisualStudio.Text.Outlining;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.Text;
@@ -27,17 +28,24 @@ namespace ProgressiveScroll
 		// We render the text to a bitmap with a maximum height.
 		private const int MaxBitmapHeight = 2000;
 
+		private readonly PixelFormat _pixelFormat = PixelFormats.Bgra32;
+		private int _bitmapWidth;
+		private int _bitmapHeight;
+		private int _bitmapStride;
+		private byte[] _bitmapPixels;
 
 		private int _width;
-		private int _numLines;
 		private int _height;
-		private double _lineRatio;
 		private int _stride;
-		private readonly PixelFormat _pf = PixelFormats.Bgra32;
 		private byte[] _pixels;
 
-		public BitmapSource Bitmap { get; private set; }
-		public int Height { get { return _height; } }
+		private double _lineRatio;
+
+		private Object l = new Object();
+		private BitmapSource _bitmap;
+
+
+		public int Height { get { return _bitmapHeight; } }
 
 		static private Dictionary<string, byte> _keywords = new Dictionary<string, byte>
 		{
@@ -76,12 +84,17 @@ namespace ProgressiveScroll
 
 			_textView = textView;
 			_outliningManager = outliningManager;
-			_width = Options.ScrollBarWidth;
-			_numLines = 0;
-			_height = 0;
-			_lineRatio = 1.0;
-			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
+			_bitmapWidth = Options.ScrollBarWidth;
+			_bitmapHeight = 0;
+			_bitmapStride = (_bitmapWidth * _pixelFormat.BitsPerPixel + 7) / 8;
+			_bitmapPixels = null;
+
+			_width = _bitmapWidth;
+			_height = _bitmapHeight;
+			_stride = _bitmapStride;
 			_pixels = null;
+
+			_lineRatio = 1.0;
 		}
 
 		public void Invalidate(Parts parts)
@@ -109,7 +122,7 @@ namespace ProgressiveScroll
 				// If there's a background thread and it's still drawing, Render will be called anyway.
 				if (_thread == null || _finishedDrawing)
 				{
-					TextVisual.Dispatcher.Invoke(new Action<bool>(Render), DispatcherPriority.Render, false);
+					TextVisual.Dispatcher.BeginInvoke(new Action<bool>(Render), DispatcherPriority.Render, false);
 				}
 			}
 		}
@@ -118,15 +131,18 @@ namespace ProgressiveScroll
 		{
 			if (bitmapDirty)
 			{
-				Bitmap = BitmapSource.Create(
-					_width,
-					_height,
-					96,
-					96,
-					_pf,
-					null,
-					_pixels,
-					_stride);
+				lock (l)
+				{
+					_bitmap = BitmapSource.Create(
+						_bitmapWidth,
+						_bitmapHeight,
+						96,
+						96,
+						_pixelFormat,
+						null,
+						_bitmapPixels,
+						_bitmapStride);
+				}
 			}
 
 			// Render the text bitmap with scaling
@@ -135,7 +151,7 @@ namespace ProgressiveScroll
 			ImageDrawing image = new ImageDrawing();
 			double textHeight = Math.Min(Height, _progressiveScroll.DrawHeight);
 			image.Rect = new Rect(0.0, 0.0, _progressiveScroll.ActualWidth, textHeight);
-			image.ImageSource = Bitmap;
+			image.ImageSource = _bitmap;
 			drawingGroup.Children.Add(image);
 
 			using (DrawingContext drawingContext = TextVisual.RenderOpen())
@@ -154,6 +170,14 @@ namespace ProgressiveScroll
 			try
 			{
 				DrawLines();
+
+				lock (l)
+				{
+					_bitmapWidth = _width;
+					_bitmapHeight = _height;
+					_bitmapStride = _stride;
+					_bitmapPixels = _pixels;
+				}
 
 				_finishedDrawing = true;
 
@@ -200,12 +224,12 @@ namespace ProgressiveScroll
 			int highlightIndex = 0;
 
 			// Create the image buffer
+			int numLines = _textView.VisualSnapshot.LineCount;
 			_width = Options.ScrollBarWidth;
-			_stride = (_width * _pf.BitsPerPixel + 7) / 8;
-			_numLines = _textView.VisualSnapshot.LineCount;
-			_height = Math.Min(_numLines, MaxBitmapHeight);
+			_height = Math.Min(numLines, MaxBitmapHeight);
+			_stride = (_width * _pixelFormat.BitsPerPixel + 7) / 8;
 			_pixels = new byte[_stride * _height];
-			_lineRatio = (double)(_height) / (double)(_numLines);
+			_lineRatio = (double)(_height) / (double)(numLines);
 
 			string text = _textView.TextBuffer.CurrentSnapshot.GetText();
 
