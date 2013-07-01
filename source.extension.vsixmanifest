@@ -1,0 +1,20 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+  <Metadata>
+    <Identity Id="ProgressiveScroll..1b4c078b-4b80-4cf3-80af-44b9088f8d8f" Version="0.7.3" Language="en-US" Publisher="freaksken" />
+    <DisplayName>ProgressiveScroll</DisplayName>
+    <Description xml:space="preserve">Progressive Scroll, a MetalScroll clone that works in VS2010 and higher.</Description>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Version="[10.0,13.0)" Id="Microsoft.VisualStudio.Ultimate" />
+    <InstallationTarget Version="[10.0,13.0)" Id="Microsoft.VisualStudio.Pro" />
+    <InstallationTarget Version="[10.0,13.0)" Id="Microsoft.VisualStudio.Premium" />
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.0" />
+  </Dependencies>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+  </Assets>
+</PackageManifest>
