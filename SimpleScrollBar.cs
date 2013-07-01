@@ -107,18 +107,31 @@ namespace ProgressiveScroll
 
 		private void ResetTrackSpan()
 		{
-			_scale = Math.Max(_realScrollBarMargin.VisualElement.ActualHeight - 3, 0) / _textView.VisualSnapshot.LineCount;
-			_scale = Math.Min(_scale, 1.0);
+			try
+			{
+				_scale = Math.Max(_realScrollBarMargin.VisualElement.ActualHeight - 3, 0) / _textView.VisualSnapshot.LineCount;
+				_scale = Math.Min(_scale, 1.0);
 
-			_trackSpanTop = 0;
-			_trackSpanBottom = _scale * _textView.VisualSnapshot.LineCount;
+				_trackSpanTop = 0;
+				_trackSpanBottom = _scale * _textView.VisualSnapshot.LineCount;
+			}
+			catch { }
 		}
 
 		private bool UseRealScrollBarTrackSpan
 		{
 			get
 			{
-				return (_realScrollBar != null) && (_realScrollBarMargin.VisualElement.Visibility == Visibility.Visible);
+				try
+				{
+					return (_realScrollBar != null) &&
+						(_realScrollBarMargin != null) &&
+						(_realScrollBarMargin.VisualElement.Visibility == Visibility.Visible);
+				}
+				catch
+				{
+					return false;
+				}
 			}
 		}
 
@@ -161,25 +174,28 @@ namespace ProgressiveScroll
 
 		void OnScrollBarIsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
 		{
-			ResetTrackSpan();
-			ResetScrollMap();
+			if (UseRealScrollBarTrackSpan)
+			{
+				ResetTrackSpan();
+				ResetScrollMap();
+			}
 		}
 
 		void OnScrollBarTrackSpanChanged(object sender, EventArgs e)
 		{
-			if (this.UseRealScrollBarTrackSpan)
+			if (UseRealScrollBarTrackSpan)
 			{
-				this.ResetTrackSpan();
-				this.RaiseTrackChangedEvent();
+				ResetTrackSpan();
+				RaiseTrackChangedEvent();
 			}
 		}
 
 		void OnLayoutChanged(object sender, EventArgs e)
 		{
-			if (this.UseRealScrollBarTrackSpan)
+			if (UseRealScrollBarTrackSpan)
 			{
-				this.ResetTrackSpan();
-				this.RaiseTrackChangedEvent();
+				ResetTrackSpan();
+				RaiseTrackChangedEvent();
 			}
 		}
 
