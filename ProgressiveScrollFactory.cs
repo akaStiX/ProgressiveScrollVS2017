@@ -60,7 +60,6 @@ namespace ProgressiveScroll
 				return null;
 			}
 
-			// HACK: Find out if this is VS 11
 			DTE dte = (DTE) ServiceProvider.GetService(typeof (DTE));
 
 			// Hide the real scroll bar

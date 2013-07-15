@@ -42,6 +42,8 @@ namespace ProgressiveScroll
 		private List<Visual> Visuals = new List<Visual>();
 
 		private const int BottomMargin = 3;
+		private bool _hasSplitter;
+
 		private bool _isDisposed;
 
 		public ProgressiveScroll(
@@ -170,12 +172,15 @@ namespace ProgressiveScroll
 			ClipToBounds = true;
 			Colors.ReloadColors();
 
+			// NOTE: This is probably gonna break something else some day, but we'll see.
+			_hasSplitter = _textView.Roles.Contains("PRIMARYDOCUMENT");
+
 			Background = Colors.WhitespaceBrush;
 
 			_containerMargin.VisualElement.Margin =
 				new Thickness(
 					0.0,
-					Options.SplitterEnabled ? 0.0 : -17.0,
+					(Options.SplitterEnabled || !_hasSplitter) ? 0.0 : -17.0,
 					0.0,
 					Options.IsVS10 ? -17.0 : 0.0);
 
@@ -192,7 +197,7 @@ namespace ProgressiveScroll
 			_containerMargin.VisualElement.Margin =
 				new Thickness(
 					0.0,
-					Options.SplitterEnabled ? 0.0 : -17.0,
+					(Options.SplitterEnabled || !_hasSplitter) ? 0.0 : -17.0,
 					0.0,
 					Options.IsVS10 ? -17.0 : 0.0);
 

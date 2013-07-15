@@ -140,7 +140,7 @@ namespace ProgressiveScroll
 			base.Initialize();
 
 			DTE dte = (DTE)GetService(typeof(DTE));
-			IsVS10 = (dte.Version == "11.0");
+			IsVS10 = (dte.Version == "10.0");
 
 			EnvDTE.Properties props = dte.get_Properties(OptionNames.PageCategoryName, OptionNames.PageName);
 
