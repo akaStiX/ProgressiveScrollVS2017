@@ -12,7 +12,6 @@ using Microsoft.VisualStudio.Utilities;
 
 namespace ProgressiveScroll
 {
-	[Export(typeof (IVsTextViewCreationListener))]
 	[Export(typeof (IViewTaggerProvider))]
 	[ContentType("code")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]

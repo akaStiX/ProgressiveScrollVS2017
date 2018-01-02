@@ -1,37 +1,27 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Vsix xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" Version="1.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
-  <Identifier Id="ProgressiveScroll..1b4c078b-4b80-4cf3-80af-44b9088f8d8f">
-	<Name>ProgressiveScroll</Name>
-	<Author>Xeeb.net</Author>
-	<Version>0.8.0</Version>
-	<Description xml:space="preserve">Progressive Scroll, a MetalScroll clone that works in VS2010 and higher.</Description>
-	<Locale>1033</Locale>
-	<SupportedProducts>
-	  <VisualStudio Version="10.0">
-		<Edition>Ultimate</Edition>
-		<Edition>Premium</Edition>
-		<Edition>Pro</Edition>
-	  </VisualStudio>
-	  <VisualStudio Version="11.0">
-		<Edition>Ultimate</Edition>
-		<Edition>Premium</Edition>
-		<Edition>Pro</Edition>
-	  </VisualStudio>
-	  <VisualStudio Version="12.0">
-		<Edition>Ultimate</Edition>
-		<Edition>Premium</Edition>
-		<Edition>Pro</Edition>
-	  </VisualStudio>
-	</SupportedProducts>
-	<SupportedFrameworkRuntimeEdition MinVersion="4.0" MaxVersion="4.0" />
-  </Identifier>
-  <References>
-	<Reference Id="Microsoft.VisualStudio.MPF" MinVersion="10.0">
-	  <Name>Visual Studio MPF</Name>
-	</Reference>
-  </References>
-  <Content>
-	<MefComponent>|%CurrentProject%|</MefComponent>
-	<VsPackage>|%CurrentProject%;PkgdefProjectOutputGroup|</VsPackage>
-  </Content>
-</Vsix>
+<PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
+    <Metadata>
+        <Identity Id="ProgressiveScroll..1b4c078b-4b80-4cf3-80af-44b9088f8d8f" Version="0.9.0" Language="en-US" Publisher="Xeeb.net" />
+        <DisplayName>ProgressiveScroll</DisplayName>
+        <Version>0.9.0</Version>
+        <Description xml:space="preserve">Progressive Scroll, updated to work with VS2017.</Description>
+    </Metadata>
+    <Installation>
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[15.0]" />
+        <InstallationTarget Id="Microsoft.VisualStudio.Pro" Version="[15.0]" />
+        <InstallationTarget Version="[15.0]" Id="Microsoft.VisualStudio.Enterprise" />
+        <InstallationTarget Version="[15.0]" Id="Microsoft.VisualStudio.IntegratedShell" />
+        <InstallationTarget Version="[15.0]" Id="Microsoft.VisualStudio.VSWinExpress" />
+        <InstallationTarget Version="[15.0]" Id="Microsoft.VisualStudio.VWDExpress" />
+        <InstallationTarget Version="[15.0]" Id="Microsoft.VisualStudio.VSWinDesktopExpress" />
+    </Installation>
+    <Dependencies>
+        <Dependency d:Source="Installed" Id="Microsoft.VisualStudio.MPF" DisplayName="Visual Studio MPF" Version="[10.0,15.0]" />
+    </Dependencies>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" TargetVersion="[15.0]" />
+    </Assets>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0]" DisplayName="Visual Studio core editor" />
+    </Prerequisites>
+</PackageManifest>
