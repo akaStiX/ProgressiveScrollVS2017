@@ -20,6 +20,8 @@ namespace ProgressiveScroll
 		public const string SplitterEnabled = "SplitterEnabled";
 		public const string ErrorsEnabled = "ErrorsEnabled";
 		public const string AltHighlight = "AltHighlight";
+		public const string MatchCase = "MatchCase";
+		public const string MatchWholeWord = "MatchWholeWord";
 	}
 
 	[ClassInterface(ClassInterfaceType.AutoDual)]
@@ -34,6 +36,8 @@ namespace ProgressiveScroll
 		private bool _splitterEnabled = false;
 		private bool _errorsEnabled = false;
 		private bool _altHighlight = false;
+		private bool _matchCase = true;
+		private bool _matchWholeWord = true;
 
 		[Category("General")]
 		[DisplayName("Width")]
@@ -98,6 +102,24 @@ namespace ProgressiveScroll
 			set { _altHighlight = value; }
 		}
 
+		[Category("General")]
+		[DisplayName("Match Case")]
+		[Description("Only highlight case-sensitive matches for double-clicked text.")]
+		public bool MatchCase
+		{
+			get { return _matchCase; }
+			set { _matchCase = value; }
+		}
+
+		[Category("General")]
+		[DisplayName("Match Whole Word")]
+		[Description("Only highlight whole-word matches for double-clicked text.")]
+		public bool MatchWholeWord
+		{
+			get { return _matchWholeWord; }
+            set { _matchWholeWord = value; }
+		}
+
 		protected override void OnApply(PageApplyEventArgs e)
 		{
 			base.OnApply(e);
@@ -113,6 +135,8 @@ namespace ProgressiveScroll
 				Options.SplitterEnabled = _splitterEnabled;
 				Options.ErrorsEnabled = _errorsEnabled;
 				Options.AltHighlight = _altHighlight;
+				Options.MatchCase = _matchCase;
+				Options.MatchWholeWord = _matchWholeWord;
 
 				ProgressiveScroll.SettingsChanged();
 			}
@@ -134,6 +158,8 @@ namespace ProgressiveScroll
 		public static bool SplitterEnabled;
 		public static bool ErrorsEnabled;
 		public static bool AltHighlight;
+		public static bool MatchCase;
+		public static bool MatchWholeWord;
 
 		protected override void Initialize()
 		{
@@ -151,6 +177,8 @@ namespace ProgressiveScroll
 			SplitterEnabled = (bool)props.Item(OptionNames.SplitterEnabled).Value;
 			ErrorsEnabled = (bool)props.Item(OptionNames.ErrorsEnabled).Value;
 			AltHighlight = (bool)props.Item(OptionNames.AltHighlight).Value;
+			MatchCase = (bool)props.Item(OptionNames.MatchCase).Value;
+			MatchWholeWord = (bool)props.Item(OptionNames.MatchWholeWord).Value;
 		}
 	}
 }

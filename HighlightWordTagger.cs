@@ -178,7 +178,11 @@ namespace ProgressiveScroll
 
 			//Find the new spans
 			var findData = new FindData(currentWord.GetText(), currentWord.Snapshot);
-			findData.FindOptions = FindOptions.WholeWord | FindOptions.MatchCase;
+			findData.FindOptions = FindOptions.None;
+			if (Options.MatchCase)
+    			findData.FindOptions |= FindOptions.MatchCase;
+			if (Options.MatchWholeWord)
+    			findData.FindOptions |= FindOptions.WholeWord;
 
 			wordSpans.AddRange(TextSearchService.FindAll(findData));
 
