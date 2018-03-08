@@ -24,7 +24,7 @@ namespace ProgressiveScroll
 	[Name(ProgressiveScroll.MarginName)]
 	[Order(After = PredefinedMarginNames.VerticalScrollBar)]
 	[MarginContainer(PredefinedMarginNames.VerticalScrollBarContainer)]
-	[ContentType("code")]
+	[ContentType("text")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]
 	internal sealed class ProgressiveScrollFactory : IWpfTextViewMarginProvider
 	{

@@ -13,7 +13,7 @@ using Microsoft.VisualStudio.Utilities;
 namespace ProgressiveScroll
 {
 	[Export(typeof (IViewTaggerProvider))]
-	[ContentType("code")]
+	[ContentType("text")]
 	[TextViewRole(PredefinedTextViewRoles.Document)]
 	[TagType(typeof (ClassificationTag))]
 	internal class HighlightWordTaggerProvider : IViewTaggerProvider
