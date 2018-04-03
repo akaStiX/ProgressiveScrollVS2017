@@ -13,5 +13,8 @@ This is a fork of [ProgressiveScroll](https://marketplace.visualstudio.com/items
 Changelog:
 * 0.9.0 
   * Updated to support Visual Studio 2017
+* 0.9.1
+  * Updated to incorporate compatibility with new releases of Visual Studio 2017, including Enterprise Edition
+
   
 Support for Visual Studio versions older than 2017 is deprecated, please use original plugin [here](https://marketplace.visualstudio.com/items?itemName=freaksken.ProgressiveScroll)
