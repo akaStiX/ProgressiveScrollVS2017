@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="ProgressiveScrollVS2017..1b4c078b-4b80-4cf3-80af-44b9088f8d8f" Version="0.9.0" Language="en-US" Publisher="Xeeb.net" />
+        <Identity Id="ProgressiveScrollVS2017..1b4c078b-4b80-4cf3-80af-44b9088f8d8f" Version="0.9.1" Language="en-US" Publisher="Xeeb.net" />
         <DisplayName>ProgressiveScroll</DisplayName>
         <Version>0.9.0</Version>
         <Description xml:space="preserve">Progressive Scroll, updated to work with VS2017.</Description>
