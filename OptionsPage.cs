@@ -117,7 +117,7 @@ namespace ProgressiveScroll
 		public bool MatchWholeWord
 		{
 			get { return _matchWholeWord; }
-            set { _matchWholeWord = value; }
+			set { _matchWholeWord = value; }
 		}
 
 		protected override void OnApply(PageApplyEventArgs e)
